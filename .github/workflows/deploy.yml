@@ -9,26 +9,48 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production
+    environment: github-pages
+    env:
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+      PROJECT_ID: ${{ secrets.PROJECT_ID }}
     
     steps:
     - name: Checkout
       uses: actions/checkout@v4
       
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+      
     - name: Inject Environment Variables
       run: |
         # Создаем файл с переменными окружения для браузера
         cat > env-config.js << EOF
-        window.CLIENT_ID = '${{ secrets.CLIENT_ID }}';
-        window.CLIENT_SECRET = '${{ secrets.CLIENT_SECRET }}';
-        window.PROJECT_ID = '${{ secrets.PROJECT_ID }}';
-        window.GOOGLE_DRIVE_FOLDER_ID = '${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}';
-        window.GOOGLE_DRIVE_FOLDER_URL = '${{ secrets.GOOGLE_DRIVE_FOLDER_URL }}';
+        window.CLIENT_ID = '${{ env.CLIENT_ID }}';
+        window.CLIENT_SECRET = '${{ env.CLIENT_SECRET }}';
+        window.PROJECT_ID = '${{ env.PROJECT_ID }}';
+        window.GOOGLE_DRIVE_FOLDER_ID = '14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae';
+        window.GOOGLE_DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae?usp=drive_link';
         EOF
         
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-      
+        # Проверяем, что файл создался
+        echo "Проверяем создание env-config.js:"
+        ls -la env-config.js
+        echo "Содержимое файла:"
+        cat env-config.js
+        
+    - name: Verify Files Before Upload
+      run: |
+        echo "Содержимое папки перед загрузкой:"
+        ls -la
+        echo "Проверяем env-config.js:"
+        if [ -f "env-config.js" ]; then
+          echo "✅ env-config.js найден"
+          echo "Размер файла: $(wc -c < env-config.js) байт"
+        else
+          echo "❌ env-config.js НЕ найден!"
+        fi
+        
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
