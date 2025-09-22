@@ -26,6 +26,20 @@ jobs:
     - name: Setup Pages
       uses: actions/configure-pages@v4
       
+    - name: Test Environment Variables
+      run: |
+        echo "=== ПРОВЕРКА ПЕРЕМЕННЫХ ОКРУЖЕНИЯ ==="
+        echo "CLIENT_ID: ${{ env.CLIENT_ID }}"
+        echo "CLIENT_SECRET: ${{ env.CLIENT_SECRET }}"
+        echo "PROJECT_ID: ${{ env.PROJECT_ID }}"
+        echo "=== ПРОВЕРКА SECRETS ==="
+        echo "CLIENT_ID from secrets: ${{ secrets.CLIENT_ID }}"
+        echo "CLIENT_SECRET from secrets: ${{ secrets.CLIENT_SECRET }}"
+        echo "PROJECT_ID from secrets: ${{ secrets.PROJECT_ID }}"
+        echo "=== ПРОВЕРКА ВСЕХ ENV ==="
+        env | grep -i client || echo "No CLIENT variables found"
+        env | grep -i project || echo "No PROJECT variables found"
+        
     - name: Inject Environment Variables
       run: |
         # Создаем временный файл с переменными
