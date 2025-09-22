@@ -28,22 +28,15 @@ jobs:
       
     - name: Inject Environment Variables
       run: |
-        # Создаем HTML файл с переменными
-        cat > env-config.html << EOF
-        <script>
-        window.CLIENT_ID = '${{ env.CLIENT_ID }}';
-        window.CLIENT_SECRET = '${{ env.CLIENT_SECRET }}';
-        window.PROJECT_ID = '${{ env.PROJECT_ID }}';
-        window.GOOGLE_DRIVE_FOLDER_ID = '14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae';
-        window.GOOGLE_DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae?usp=drive_link';
-        </script>
-        EOF
+        # Встраиваем переменные прямо в evaluation.html
+        echo "Встраиваем переменные в evaluation.html..."
         
-        # Проверяем создание файла
-        echo "Проверяем создание env-config.html:"
-        ls -la env-config.html
-        echo "Содержимое файла:"
-        cat env-config.html
+        # Заменяем строку в evaluation.html
+        sed -i 's|<script src="env-vars.html"></script>|<script>window.CLIENT_ID = "${{ env.CLIENT_ID }}"; window.CLIENT_SECRET = "${{ env.CLIENT_SECRET }}"; window.PROJECT_ID = "${{ env.PROJECT_ID }}"; window.GOOGLE_DRIVE_FOLDER_ID = "14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae"; window.GOOGLE_DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae?usp=drive_link";</script>|g' evaluation.html
+        
+        # Проверяем результат
+        echo "Проверяем встроенные переменные:"
+        grep -A 2 -B 2 "window.CLIENT_ID" evaluation.html || echo "Переменные не найдены"
         
     - name: Verify Files Before Upload
       run: |
@@ -74,7 +67,6 @@ jobs:
       
     - name: Verify Deployment
       run: |
-        echo "Деплой завершен. Проверьте доступность файлов:"
-        echo "env-config.html: https://aaguseynov.github.io/ios-windrose-matrix/env-config.html"
+        echo "Деплой завершен. Переменные встроены в evaluation.html:"
         echo "evaluation.html: https://aaguseynov.github.io/ios-windrose-matrix/evaluation.html"
         echo "Проверьте работу Google Drive API на странице!"
