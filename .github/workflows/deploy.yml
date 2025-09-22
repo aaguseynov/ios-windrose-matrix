@@ -28,23 +28,12 @@ jobs:
       
     - name: Inject Environment Variables
       run: |
-        # Создаем файл с переменными окружения для браузера
-        cat > env-config.js << EOF
-        window.CLIENT_ID = '${{ env.CLIENT_ID }}';
-        window.CLIENT_SECRET = '${{ env.CLIENT_SECRET }}';
-        window.PROJECT_ID = '${{ env.PROJECT_ID }}';
-        window.GOOGLE_DRIVE_FOLDER_ID = '14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae';
-        window.GOOGLE_DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae?usp=drive_link';
-        EOF
+        # Встраиваем переменные прямо в evaluation.html
+        sed -i 's|<!-- ENV_CONFIG_PLACEHOLDER -->|<script>window.CLIENT_ID = "${{ env.CLIENT_ID }}"; window.CLIENT_SECRET = "${{ env.CLIENT_SECRET }}"; window.PROJECT_ID = "${{ env.PROJECT_ID }}"; window.GOOGLE_DRIVE_FOLDER_ID = "14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae"; window.GOOGLE_DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae?usp=drive_link";</script>|g' evaluation.html
         
-        # Создаем также файл с другим расширением для тестирования
-        cp env-config.js env-config.txt
-        
-        # Проверяем, что файл создался
-        echo "Проверяем создание env-config.js:"
-        ls -la env-config.js
-        echo "Содержимое файла:"
-        cat env-config.js
+        # Проверяем, что переменные встроены в HTML
+        echo "Проверяем встроенные переменные в evaluation.html:"
+        grep -o "window.CLIENT_ID" evaluation.html || echo "Переменные не найдены"
         
     - name: Verify Files Before Upload
       run: |
@@ -75,8 +64,6 @@ jobs:
       
     - name: Verify Deployment
       run: |
-        echo "Деплой завершен. Проверьте доступность файлов:"
-        echo "env-config.js: https://aaguseynov.github.io/ios-windrose-matrix/env-config.js"
-        echo "env-config.txt: https://aaguseynov.github.io/ios-windrose-matrix/env-config.txt"
-        echo "test-file.txt: https://aaguseynov.github.io/ios-windrose-matrix/test-file.txt"
+        echo "Деплой завершен. Переменные встроены в evaluation.html:"
         echo "evaluation.html: https://aaguseynov.github.io/ios-windrose-matrix/evaluation.html"
+        echo "Проверьте работу Google Drive API на странице!"
