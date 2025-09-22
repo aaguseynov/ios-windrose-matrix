@@ -10,6 +10,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: github-pages
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     env:
       CLIENT_ID: ${{ secrets.CLIENT_ID }}
       CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
@@ -33,6 +37,9 @@ jobs:
         window.GOOGLE_DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae?usp=drive_link';
         EOF
         
+        # Создаем также файл с другим расширением для тестирования
+        cp env-config.js env-config.txt
+        
         # Проверяем, что файл создался
         echo "Проверяем создание env-config.js:"
         ls -la env-config.js
@@ -47,9 +54,15 @@ jobs:
         if [ -f "env-config.js" ]; then
           echo "✅ env-config.js найден"
           echo "Размер файла: $(wc -c < env-config.js) байт"
+          echo "Права доступа: $(ls -la env-config.js)"
         else
           echo "❌ env-config.js НЕ найден!"
         fi
+        
+        # Дополнительная проверка - создаем тестовый файл
+        echo "Создаем тестовый файл для проверки:"
+        echo "test content" > test-file.txt
+        ls -la test-file.txt
         
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
@@ -59,3 +72,11 @@ jobs:
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
+      
+    - name: Verify Deployment
+      run: |
+        echo "Деплой завершен. Проверьте доступность файлов:"
+        echo "env-config.js: https://aaguseynov.github.io/ios-windrose-matrix/env-config.js"
+        echo "env-config.txt: https://aaguseynov.github.io/ios-windrose-matrix/env-config.txt"
+        echo "test-file.txt: https://aaguseynov.github.io/ios-windrose-matrix/test-file.txt"
+        echo "evaluation.html: https://aaguseynov.github.io/ios-windrose-matrix/evaluation.html"
