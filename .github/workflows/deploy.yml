@@ -42,14 +42,19 @@ jobs:
         
     - name: Inject Environment Variables
       run: |
-        # Встраиваем переменные прямо в evaluation.html
-        echo "Встраиваем переменные в evaluation.html..."
+        # Заменяем плейсхолдеры в evaluation.html
+        echo "Заменяем плейсхолдеры в evaluation.html..."
         
-        # Заменяем плейсхолдер в evaluation.html на встроенный скрипт
-        sed -i 's|<!-- ENV_VARS_PLACEHOLDER -->|<script>window.CLIENT_ID = "${{ env.CLIENT_ID }}"; window.CLIENT_SECRET = "${{ env.CLIENT_SECRET }}"; window.PROJECT_ID = "${{ env.PROJECT_ID }}"; window.GOOGLE_DRIVE_FOLDER_ID = "14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae"; window.GOOGLE_DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae?usp=drive_link";</script>|g' evaluation.html
+        # Создаем временный файл с замененными значениями
+        sed "s/PLACEHOLDER_CLIENT_ID/${{ env.CLIENT_ID }}/g" evaluation.html > temp.html
+        sed "s/PLACEHOLDER_CLIENT_SECRET/${{ env.CLIENT_SECRET }}/g" temp.html > temp2.html
+        sed "s/PLACEHOLDER_PROJECT_ID/${{ env.PROJECT_ID }}/g" temp2.html > evaluation.html
+        
+        # Удаляем временные файлы
+        rm temp.html temp2.html
         
         # Проверяем результат
-        echo "Проверяем встроенные переменные:"
+        echo "Проверяем замену переменных:"
         grep -A 3 -B 1 "window.CLIENT_ID" evaluation.html || echo "Переменные не найдены"
         
     - name: Verify Files Before Upload
