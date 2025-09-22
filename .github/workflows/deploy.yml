@@ -28,12 +28,22 @@ jobs:
       
     - name: Inject Environment Variables
       run: |
-        # Встраиваем переменные прямо в evaluation.html
-        sed -i 's|<!-- ENV_CONFIG_PLACEHOLDER -->|<script>window.CLIENT_ID = "${{ env.CLIENT_ID }}"; window.CLIENT_SECRET = "${{ env.CLIENT_SECRET }}"; window.PROJECT_ID = "${{ env.PROJECT_ID }}"; window.GOOGLE_DRIVE_FOLDER_ID = "14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae"; window.GOOGLE_DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae?usp=drive_link";</script>|g' evaluation.html
+        # Создаем HTML файл с переменными
+        cat > env-config.html << EOF
+        <script>
+        window.CLIENT_ID = '${{ env.CLIENT_ID }}';
+        window.CLIENT_SECRET = '${{ env.CLIENT_SECRET }}';
+        window.PROJECT_ID = '${{ env.PROJECT_ID }}';
+        window.GOOGLE_DRIVE_FOLDER_ID = '14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae';
+        window.GOOGLE_DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae?usp=drive_link';
+        </script>
+        EOF
         
-        # Проверяем, что переменные встроены в HTML
-        echo "Проверяем встроенные переменные в evaluation.html:"
-        grep -o "window.CLIENT_ID" evaluation.html || echo "Переменные не найдены"
+        # Проверяем создание файла
+        echo "Проверяем создание env-config.html:"
+        ls -la env-config.html
+        echo "Содержимое файла:"
+        cat env-config.html
         
     - name: Verify Files Before Upload
       run: |
@@ -64,6 +74,7 @@ jobs:
       
     - name: Verify Deployment
       run: |
-        echo "Деплой завершен. Переменные встроены в evaluation.html:"
+        echo "Деплой завершен. Проверьте доступность файлов:"
+        echo "env-config.html: https://aaguseynov.github.io/ios-windrose-matrix/env-config.html"
         echo "evaluation.html: https://aaguseynov.github.io/ios-windrose-matrix/evaluation.html"
         echo "Проверьте работу Google Drive API на странице!"
