@@ -21,6 +21,46 @@ class GoogleDrive {
     }
 
     /**
+     * Получение токена доступа
+     */
+    async getAccessToken() {
+        try {
+            // Сначала пытаемся получить токен из auth
+            if (this.auth && this.auth.isSignedIn && this.auth.accessToken) {
+                return this.auth.accessToken;
+            }
+            
+            // Если токена нет, пытаемся получить его через Google Identity Services
+            if (window.google && window.google.accounts && this.auth && this.auth.clientId) {
+                console.log('🔄 Получение токена через Google Identity Services...');
+                
+                return new Promise((resolve, reject) => {
+                    const tokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: this.auth.clientId,
+                        scope: 'https://www.googleapis.com/auth/drive.file',
+                        callback: (response) => {
+                            if (response.access_token) {
+                                console.log('✅ Токен получен через Google Identity Services');
+                                resolve(response.access_token);
+                            } else {
+                                console.error('❌ Токен не получен');
+                                reject(new Error('Не удалось получить токен доступа'));
+                            }
+                        }
+                    });
+                    
+                    tokenClient.requestAccessToken();
+                });
+            }
+            
+            throw new Error('Пользователь не авторизован');
+        } catch (error) {
+            console.error('❌ Ошибка получения токена:', error);
+            throw new Error('Пользователь не авторизован');
+        }
+    }
+
+    /**
      * Получение списка файлов из Google Drive
      */
     async getFiles(options = {}) {
@@ -28,7 +68,7 @@ class GoogleDrive {
             console.log('📁 Получение списка файлов...');
             this.showLoadingIndicator('Загрузка файлов...');
 
-            const accessToken = this.auth.getAccessToken();
+            const accessToken = await this.getAccessToken();
             
             // Параметры запроса
             const params = new URLSearchParams({
@@ -86,7 +126,7 @@ class GoogleDrive {
             console.log('📤 Загрузка файла:', filename);
             this.showLoadingIndicator('Сохранение файла...');
 
-            const accessToken = this.auth.getAccessToken();
+            const accessToken = await this.getAccessToken();
             
             // Создаем метаданные файла
             const metadata = {
@@ -137,7 +177,7 @@ class GoogleDrive {
             console.log('📥 Скачивание файла:', fileId);
             this.showLoadingIndicator('Загрузка файла...');
 
-            const accessToken = this.auth.getAccessToken();
+            const accessToken = await this.getAccessToken();
 
             const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
                 method: 'GET',
@@ -170,7 +210,7 @@ class GoogleDrive {
      */
     async getFileInfo(fileId) {
         try {
-            const accessToken = this.auth.getAccessToken();
+            const accessToken = await this.getAccessToken();
 
             const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,mimeType,createdTime,modifiedTime,size`, {
                 method: 'GET',
@@ -200,7 +240,7 @@ class GoogleDrive {
         try {
             console.log('📁 Создание папки:', name);
 
-            const accessToken = this.auth.getAccessToken();
+            const accessToken = await this.getAccessToken();
             
             const metadata = {
                 name: name,
@@ -239,7 +279,7 @@ class GoogleDrive {
         try {
             console.log('🗑️ Удаление файла:', fileId);
 
-            const accessToken = this.auth.getAccessToken();
+            const accessToken = await this.getAccessToken();
 
             const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
                 method: 'DELETE',

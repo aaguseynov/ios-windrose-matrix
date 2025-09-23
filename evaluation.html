@@ -878,7 +878,6 @@
 
     <script>
         // Глобальные переменные для системы
-        let auth = null;
         let drive = null;
         let fileManager = null;
         let windroseChart = null;
@@ -1391,48 +1390,44 @@
         // Инициализация всей системы
         async function initSystem() {
             try {
-                console.log('🔧 Инициализация Google Auth...');
+                console.log('🔧 Инициализация системы оценки...');
                 
-                // Ждем загрузки env-vars.js
-                console.log('⏳ Ожидание загрузки env-vars.js...');
-                await waitForEnvVars();
-                console.log('✅ env-vars.js загружен');
-                
-                // Инициализируем авторизацию
-                auth = new GoogleAuth(config);
-                
-                // Настройка callbacks для авторизации
-                auth.onAuthSuccess = function(user) {
-                    console.log('✅ Авторизация успешна:', user ? user.name || user.getBasicProfile().getName() : 'Демо-режим');
-                    const userName = user ? (user.name || user.getBasicProfile().getName()) : 'Пользователь';
-                    showNotification('Авторизован: ' + userName, 'success');
-                };
-                
-                auth.onAuthError = function(message) {
-                    console.error('❌ Ошибка авторизации:', message);
-                    showNotification(message, 'error');
-                };
-                
-                auth.onSignOut = function() {
-                    console.log('👋 Пользователь вышел из системы');
-                    showNotification('Вы вышли из системы', 'info');
-                };
-                
-                // Инициализируем API
-                const authInitialized = await auth.initialize();
+                // Инициализируем глобальный сервис авторизации
+                const authInitialized = await window.authService.initialize(config);
                 if (!authInitialized) {
-                    throw new Error('Не удалось инициализировать авторизацию');
+                    throw new Error('Не удалось инициализировать глобальный сервис авторизации');
                 }
                 
+                // Получаем экземпляр авторизации
+                const auth = window.authService.getAuth();
+                
                 // Проверяем, авторизован ли пользователь
-                if (auth.isSignedIn) {
+                if (window.authService.isSignedIn()) {
                     console.log('👤 Пользователь уже авторизован');
-                    const userName = auth.user ? (auth.user.name || auth.user.getBasicProfile().getName()) : 'Пользователь';
+                    const user = window.authService.getUser();
+                    const userName = user ? (user.name || user.getBasicProfile().getName()) : 'Пользователь';
                     showNotification('Авторизован: ' + userName, 'success');
                 } else {
                     console.log('⚠️ Пользователь не авторизован');
                     showNotification('Необходимо авторизоваться в Google', 'warning');
                 }
+                
+                // Подписываемся на события авторизации
+                window.authService.onAuthSuccess(function(user) {
+                    console.log('✅ Авторизация успешна:', user ? user.name || user.getBasicProfile().getName() : 'Демо-режим');
+                    const userName = user ? (user.name || user.getBasicProfile().getName()) : 'Пользователь';
+                    showNotification('Авторизован: ' + userName, 'success');
+                });
+                
+                window.authService.onAuthError(function(message) {
+                    console.error('❌ Ошибка авторизации:', message);
+                    showNotification(message, 'error');
+                });
+                
+                window.authService.onSignOut(function() {
+                    console.log('👋 Пользователь вышел из системы');
+                    showNotification('Вы вышли из системы', 'info');
+                });
                 
                 console.log('🔧 Инициализация Google Drive...');
                 
@@ -1447,7 +1442,7 @@
                 console.log('🔧 Инициализация File Manager...');
                 
                 // Инициализируем File Manager
-                fileManager = new FileManager(drive);
+                fileManager = new FileManager(auth, drive);
                 
                 // Настройка callbacks для File Manager
                 fileManager.onFileLoaded = function(data, fileId) {

@@ -4,7 +4,8 @@
  */
 
 class FileManager {
-    constructor(drive) {
+    constructor(auth, drive) {
+        this.auth = auth;
         this.drive = drive;
         this.selectedFiles = [];
         this.currentFiles = [];

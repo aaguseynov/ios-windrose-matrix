@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест глобального сервиса авторизации</title>
+    <script src="https://aaguseynov.github.io/ios-windrose-matrix/env-vars.js"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover { background: #3367d6; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .user-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .test-results {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .test-item {
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin: 5px 0;
+            border-radius: 4px;
+            background: white;
+        }
+        .test-pass { border-left: 4px solid #28a745; }
+        .test-fail { border-left: 4px solid #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Тест глобального сервиса авторизации</h1>
+        
+        <div id="status" class="status info">
+            ⏳ Инициализация системы...
+        </div>
+        
+        <div>
+            <button id="init-btn" onclick="initializeAuth()" disabled>
+                🔧 Инициализировать сервис
+            </button>
+            <button id="signin-btn" onclick="signIn()" disabled>
+                🔐 Авторизация
+            </button>
+            <button id="signout-btn" onclick="signOut()" disabled>
+                👋 Выйти
+            </button>
+            <button id="test-btn" onclick="runTests()" disabled>
+                🧪 Запустить тесты
+            </button>
+        </div>
+        
+        <!-- Контейнер для кнопки Google Sign-In -->
+        <div id="google-signin-button" style="margin: 20px 0; display: none;"></div>
+        
+        <div id="user-info" class="user-info" style="display: none;">
+            <h3>👤 Информация о пользователе</h3>
+            <div id="user-details"></div>
+        </div>
+        
+        <div id="test-results" class="test-results" style="display: none;">
+            <h3>🧪 Результаты тестов</h3>
+            <div id="test-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Инициализация тестовой страницы...');
+            
+            // Проверяем, что глобальный сервис доступен
+            if (window.authService) {
+                console.log('✅ Глобальный authService доступен');
+                updateStatus('Глобальный authService доступен. Готов к инициализации.', 'info');
+                document.getElementById('init-btn').disabled = false;
+            } else {
+                console.error('❌ Глобальный authService недоступен');
+                updateStatus('❌ Глобальный authService недоступен', 'error');
+            }
+        });
+        
+        // Функции
+        async function initializeAuth() {
+            try {
+                updateStatus('⏳ Инициализация глобального сервиса...', 'info');
+                
+                const success = await window.authService.initialize(config);
+                
+                if (success) {
+                    updateStatus('✅ Глобальный сервис инициализирован', 'success');
+                    document.getElementById('signin-btn').disabled = false;
+                    document.getElementById('test-btn').disabled = false;
+                    
+                    // Проверяем, авторизован ли пользователь
+                    if (window.authService.isSignedIn()) {
+                        showUserInfo();
+                        updateStatus('✅ Пользователь уже авторизован', 'success');
+                    }
+                } else {
+                    updateStatus('❌ Ошибка инициализации сервиса', 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ Ошибка инициализации:', error);
+                updateStatus('❌ Ошибка инициализации: ' + error.message, 'error');
+            }
+        }
+        
+        async function signIn() {
+            try {
+                updateStatus('⏳ Запрос авторизации...', 'info');
+                
+                const success = await window.authService.signIn();
+                
+                if (success) {
+                    updateStatus('✅ Авторизация успешна', 'success');
+                    showUserInfo();
+                } else {
+                    updateStatus('❌ Ошибка авторизации', 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ Ошибка авторизации:', error);
+                updateStatus('❌ Ошибка авторизации: ' + error.message, 'error');
+            }
+        }
+        
+        async function signOut() {
+            try {
+                updateStatus('⏳ Выход из системы...', 'info');
+                
+                await window.authService.signOut();
+                
+                updateStatus('👋 Выход выполнен', 'info');
+                document.getElementById('user-info').style.display = 'none';
+                
+            } catch (error) {
+                console.error('❌ Ошибка выхода:', error);
+                updateStatus('❌ Ошибка выхода: ' + error.message, 'error');
+            }
+        }
+        
+        function showUserInfo() {
+            const userInfoEl = document.getElementById('user-info');
+            const userDetailsEl = document.getElementById('user-details');
+            
+            const user = window.authService.getUser();
+            const accessToken = window.authService.getAccessToken();
+            
+            if (user && user.getBasicProfile) {
+                const profile = user.getBasicProfile();
+                userDetailsEl.innerHTML = `
+                    <img src="${profile.getImageUrl()}" alt="Avatar" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 15px; vertical-align: middle;">
+                    <strong>Имя:</strong> ${profile.getName()}<br>
+                    <strong>Email:</strong> ${profile.getEmail()}<br>
+                    <strong>ID:</strong> ${user.id}<br>
+                    <strong>Токен:</strong> ${accessToken ? 'Есть' : 'Нет'}
+                `;
+            } else if (user) {
+                userDetailsEl.innerHTML = `
+                    <img src="${user.picture || ''}" alt="Avatar" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 15px; vertical-align: middle;">
+                    <strong>Имя:</strong> ${user.name || 'Неизвестно'}<br>
+                    <strong>Email:</strong> ${user.email || 'Неизвестно'}<br>
+                    <strong>ID:</strong> ${user.id || 'Неизвестно'}<br>
+                    <strong>Токен:</strong> ${accessToken ? 'Есть' : 'Нет'}
+                `;
+            }
+            
+            userInfoEl.style.display = 'block';
+        }
+        
+        function runTests() {
+            const testResultsEl = document.getElementById('test-results');
+            const testContentEl = document.getElementById('test-content');
+            
+            const tests = [
+                {
+                    name: 'Глобальный сервис доступен',
+                    test: () => !!window.authService
+                },
+                {
+                    name: 'Сервис инициализирован',
+                    test: () => window.authService.isInitialized
+                },
+                {
+                    name: 'Пользователь авторизован',
+                    test: () => window.authService.isSignedIn()
+                },
+                {
+                    name: 'Есть пользователь',
+                    test: () => !!window.authService.getUser()
+                },
+                {
+                    name: 'Есть токен доступа',
+                    test: () => !!window.authService.getAccessToken()
+                },
+                {
+                    name: 'Токен не пустой',
+                    test: () => {
+                        const token = window.authService.getAccessToken();
+                        return token && token.length > 0;
+                    }
+                }
+            ];
+            
+            let results = '';
+            let passed = 0;
+            
+            tests.forEach(test => {
+                try {
+                    const result = test.test();
+                    const status = result ? 'test-pass' : 'test-fail';
+                    const icon = result ? '✅' : '❌';
+                    
+                    results += `<div class="test-item ${status}">
+                        ${icon} <strong>${test.name}:</strong> ${result ? 'ПРОЙДЕН' : 'ПРОВАЛЕН'}
+                    </div>`;
+                    
+                    if (result) passed++;
+                } catch (error) {
+                    results += `<div class="test-item test-fail">
+                        ❌ <strong>${test.name}:</strong> ОШИБКА - ${error.message}
+                    </div>`;
+                }
+            });
+            
+            const summary = `<div class="test-item" style="background: #e9ecef; font-weight: bold;">
+                📊 Результат: ${passed}/${tests.length} тестов пройдено
+            </div>`;
+            
+            testContentEl.innerHTML = summary + results;
+            testResultsEl.style.display = 'block';
+        }
+        
+        function updateStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+    </script>
+</body>
+</html>

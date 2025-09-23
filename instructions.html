@@ -372,14 +372,11 @@
     </div>
 
     <script>
-        // Инициализация системы авторизации
-        let auth = null;
-
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Инициализация страницы инструкций...');
             
-            // Инициализируем авторизацию
-            initAuth();
+            // Инициализируем глобальный сервис авторизации
+            initGlobalAuth();
             
             // Обработчик кнопки "Начать оценку"
             const startBtn = document.getElementById('start-evaluation-btn');
@@ -388,18 +385,16 @@
             startBtn.addEventListener('click', async function() {
                 console.log('🔐 Запрос авторизации...');
                 
-                if (!auth) {
+                if (!window.authService || !window.authService.isInitialized) {
                     authStatus.innerHTML = '❌ Ошибка инициализации авторизации';
                     return;
                 }
                 
                 try {
-                    const success = await auth.signIn();
+                    const success = await window.authService.signIn();
                     if (success) {
-                        authStatus.innerHTML = '✅ Авторизация успешна! Переход на страницу оценки...';
-                        setTimeout(() => {
-                            window.location.href = 'evaluation.html';
-                        }, 1000);
+                        authStatus.innerHTML = '✅ Авторизация успешна! Теперь можете начать оценку.';
+                        showStartButton();
                     }
                 } catch (error) {
                     console.error('Ошибка авторизации:', error);
@@ -408,44 +403,42 @@
             });
         });
 
-        // Инициализация авторизации
-        async function initAuth() {
+        // Инициализация глобального сервиса авторизации
+        async function initGlobalAuth() {
             try {
-                console.log('🔧 Инициализация Google Auth...');
+                console.log('🔧 Инициализация глобального AuthService...');
                 
-                // Ждем загрузки env-vars.js
-                console.log('⏳ Ожидание загрузки env-vars.js...');
-                await waitForEnvVars();
-                console.log('✅ env-vars.js загружен');
+                // Инициализируем глобальный сервис
+                const initialized = await window.authService.initialize(config);
                 
-                auth = new GoogleAuth(config);
-                
-                // Настройка callbacks
-                auth.onAuthSuccess = function(user) {
-                    console.log('✅ Авторизация успешна:', user ? user.name || user.getBasicProfile().getName() : 'Демо-режим');
-                    const userName = user ? (user.name || user.getBasicProfile().getName()) : 'Пользователь';
-                    updateAuthStatus('Авторизован: ' + userName);
-                    
-                    // Переход на страницу заполнения через 1.5 секунды
-                    setTimeout(() => {
-                        window.location.href = 'evaluation.html';
-                    }, 1500);
-                };
-                
-                auth.onAuthError = function(message) {
-                    console.error('❌ Ошибка авторизации:', message);
-                    updateAuthStatus('Ошибка авторизации: ' + message);
-                };
-                
-                // Инициализируем API
-                const initialized = await auth.initialize();
                 if (initialized) {
-                    console.log('✅ Google Auth API готов к работе');
+                    console.log('✅ Глобальный AuthService готов к работе');
                     updateAuthStatus('Система готова к авторизации');
+                    
+                    // Проверяем, авторизован ли пользователь
+                    if (window.authService.isSignedIn()) {
+                        const user = window.authService.getUser();
+                        const userName = user ? (user.name || user.getBasicProfile().getName()) : 'Пользователь';
+                        updateAuthStatus('✅ Авторизован: ' + userName + '. Теперь можете начать оценку!');
+                        showStartButton();
+                    }
                 } else {
-                    console.error('❌ Не удалось инициализировать Google Auth API');
+                    console.error('❌ Не удалось инициализировать глобальный AuthService');
                     updateAuthStatus('❌ Ошибка инициализации Google API');
                 }
+                
+                // Подписываемся на события авторизации
+                window.authService.onAuthSuccess(function(user) {
+                    console.log('✅ Авторизация успешна:', user ? user.name || user.getBasicProfile().getName() : 'Демо-режим');
+                    const userName = user ? (user.name || user.getBasicProfile().getName()) : 'Пользователь';
+                    updateAuthStatus('✅ Авторизован: ' + userName + '. Теперь можете начать оценку!');
+                    showStartButton();
+                });
+                
+                window.authService.onAuthError(function(message) {
+                    console.error('❌ Ошибка авторизации:', message);
+                    updateAuthStatus('Ошибка авторизации: ' + message);
+                });
                 
             } catch (error) {
                 console.error('❌ Критическая ошибка инициализации:', error);
@@ -459,6 +452,25 @@
             if (authStatus) {
                 authStatus.innerHTML = message;
             }
+        }
+
+        // Показать кнопку для перехода на страницу оценки
+        function showStartButton() {
+            const startBtn = document.getElementById('start-evaluation-btn');
+            const authStatus = document.getElementById('auth-status');
+            
+            // Обновляем кнопку
+            startBtn.textContent = '🚀 Начать оценку';
+            startBtn.style.background = 'linear-gradient(135deg, #48bb78, #38a169)';
+            startBtn.style.cursor = 'pointer';
+            
+            // Обновляем обработчик кнопки
+            startBtn.onclick = function() {
+                window.location.href = 'evaluation.html';
+            };
+            
+            // Добавляем дополнительную информацию
+            authStatus.innerHTML += '<br><br>Нажмите кнопку ниже для перехода к оценке компетенций.';
         }
 
         // Функция показа уведомлений (для совместимости с auth.js)

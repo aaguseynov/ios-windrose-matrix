@@ -91,7 +91,8 @@ class GoogleAuth {
                         this.handleCredentialResponse(response);
                     },
                     auto_select: false,
-                    cancel_on_tap_outside: false
+                    cancel_on_tap_outside: false,
+                    scope: this.scope
                 });
                 
                 console.log('✅ Google Identity Services инициализированы');
@@ -162,8 +163,8 @@ class GoogleAuth {
         try {
             console.log('🔄 Получение токена доступа для Google Drive API...');
             
-            // Для Google Identity Services используем credential напрямую
-            // или получаем токен через Google Token API
+            // Для Google Identity Services нужно использовать Google Token API
+            // с правильными параметрами для получения access token
             const response = await fetch('https://oauth2.googleapis.com/token', {
                 method: 'POST',
                 headers: {
@@ -172,7 +173,8 @@ class GoogleAuth {
                 body: new URLSearchParams({
                     grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
                     assertion: this.credential,
-                    scope: this.scope
+                    scope: this.scope,
+                    client_id: this.clientId
                 })
             });
 
@@ -181,9 +183,11 @@ class GoogleAuth {
                 this.accessToken = tokenData.access_token;
                 console.log('✅ Токен доступа получен через Token API');
             } else {
-                // Fallback: используем credential для прямых запросов
-                this.accessToken = this.credential;
-                console.log('⚠️ Используем credential напрямую');
+                const errorText = await response.text();
+                console.error('❌ Ошибка получения токена:', response.status, errorText);
+                
+                // Fallback: попробуем использовать Google Identity Services для получения токена
+                await this.getTokenFromGoogleIdentityServices();
             }
             
             this.handleAuthSuccess();
@@ -191,8 +195,55 @@ class GoogleAuth {
         } catch (error) {
             console.error('❌ Ошибка получения токена доступа:', error);
             
-            // Fallback: используем credential для прямых запросов
+            // Fallback: попробуем использовать Google Identity Services для получения токена
+            await this.getTokenFromGoogleIdentityServices();
+        }
+    }
+
+    /**
+     * Получение токена через Google Identity Services
+     */
+    async getTokenFromGoogleIdentityServices() {
+        try {
+            console.log('🔄 Попытка получения токена через Google Identity Services...');
+            
+            // Используем Google Identity Services для получения токена с нужными scope
+            if (window.google && window.google.accounts) {
+                // Попробуем получить токен с правильными scope
+                const tokenResponse = await google.accounts.oauth2.initTokenClient({
+                    client_id: this.clientId,
+                    scope: this.scope,
+                    callback: (response) => {
+                        if (response.access_token) {
+                            this.accessToken = response.access_token;
+                            console.log('✅ Токен получен через Google Identity Services');
+                            this.handleAuthSuccess();
+                        } else {
+                            console.error('❌ Токен не получен через Google Identity Services');
+                            // Используем credential как fallback
+                            this.accessToken = this.credential;
+                            this.handleAuthSuccess();
+                        }
+                    }
+                }).requestAccessToken();
+                
+                // Если это не async callback, используем credential
+                if (!this.accessToken) {
+                    this.accessToken = this.credential;
+                    console.log('⚠️ Используем credential напрямую');
+                    this.handleAuthSuccess();
+                }
+            } else {
+                // Используем credential как fallback
+                this.accessToken = this.credential;
+                console.log('⚠️ Google Identity Services недоступны, используем credential');
+                this.handleAuthSuccess();
+            }
+        } catch (error) {
+            console.error('❌ Ошибка получения токена через Google Identity Services:', error);
+            // Используем credential как fallback
             this.accessToken = this.credential;
+            console.log('⚠️ Используем credential как fallback');
             this.handleAuthSuccess();
         }
     }
@@ -567,9 +618,199 @@ class GoogleAuth {
     }
 }
 
+// Глобальный сервис авторизации
+class AuthService {
+    constructor() {
+        this.auth = null;
+        this.isInitialized = false;
+        this.initializationPromise = null;
+    }
+
+    /**
+     * Инициализация глобального сервиса авторизации
+     */
+    async initialize(config) {
+        if (this.isInitialized) {
+            console.log('✅ AuthService уже инициализирован');
+            return true;
+        }
+
+        if (this.initializationPromise) {
+            console.log('⏳ AuthService уже инициализируется...');
+            return await this.initializationPromise;
+        }
+
+        this.initializationPromise = this._doInitialize(config);
+        const result = await this.initializationPromise;
+        this.isInitialized = true;
+        return result;
+    }
+
+    async _doInitialize(config) {
+        try {
+            console.log('🔧 Инициализация глобального AuthService...');
+            
+            // Ждем загрузки env-vars.js
+            await waitForEnvVars();
+            
+            // Создаем экземпляр GoogleAuth
+            this.auth = new GoogleAuth(config);
+            
+            // Настраиваем глобальные callbacks
+            this.auth.onAuthSuccess = (user) => {
+                console.log('✅ Глобальная авторизация успешна:', user);
+                this._notifyAuthSuccess(user);
+            };
+            
+            this.auth.onAuthError = (message) => {
+                console.error('❌ Глобальная ошибка авторизации:', message);
+                this._notifyAuthError(message);
+            };
+            
+            this.auth.onSignOut = () => {
+                console.log('👋 Глобальный выход из системы');
+                this._notifySignOut();
+            };
+            
+            // Инициализируем Google Auth
+            const success = await this.auth.initialize();
+            if (success) {
+                console.log('✅ Глобальный AuthService инициализирован');
+            } else {
+                console.error('❌ Не удалось инициализировать глобальный AuthService');
+            }
+            
+            return success;
+        } catch (error) {
+            console.error('❌ Критическая ошибка инициализации AuthService:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Получить экземпляр авторизации
+     */
+    getAuth() {
+        if (!this.auth) {
+            throw new Error('AuthService не инициализирован. Вызовите initialize() сначала.');
+        }
+        return this.auth;
+    }
+
+    /**
+     * Проверить, авторизован ли пользователь
+     */
+    isSignedIn() {
+        return this.auth && this.auth.isSignedIn;
+    }
+
+    /**
+     * Получить пользователя
+     */
+    getUser() {
+        return this.auth ? this.auth.user : null;
+    }
+
+    /**
+     * Получить токен доступа
+     */
+    getAccessToken() {
+        return this.auth ? this.auth.accessToken : null;
+    }
+
+    /**
+     * Войти в систему
+     */
+    async signIn() {
+        if (!this.auth) {
+            throw new Error('AuthService не инициализирован');
+        }
+        return await this.auth.signIn();
+    }
+
+    /**
+     * Выйти из системы
+     */
+    async signOut() {
+        if (!this.auth) {
+            throw new Error('AuthService не инициализирован');
+        }
+        return await this.auth.signOut();
+    }
+
+    // Глобальные обработчики событий
+    _authSuccessCallbacks = [];
+    _authErrorCallbacks = [];
+    _signOutCallbacks = [];
+
+    /**
+     * Подписаться на успешную авторизацию
+     */
+    onAuthSuccess(callback) {
+        this._authSuccessCallbacks.push(callback);
+    }
+
+    /**
+     * Подписаться на ошибку авторизации
+     */
+    onAuthError(callback) {
+        this._authErrorCallbacks.push(callback);
+    }
+
+    /**
+     * Подписаться на выход из системы
+     */
+    onSignOut(callback) {
+        this._signOutCallbacks.push(callback);
+    }
+
+    /**
+     * Уведомить о успешной авторизации
+     */
+    _notifyAuthSuccess(user) {
+        this._authSuccessCallbacks.forEach(callback => {
+            try {
+                callback(user);
+            } catch (error) {
+                console.error('❌ Ошибка в callback авторизации:', error);
+            }
+        });
+    }
+
+    /**
+     * Уведомить об ошибке авторизации
+     */
+    _notifyAuthError(message) {
+        this._authErrorCallbacks.forEach(callback => {
+            try {
+                callback(message);
+            } catch (error) {
+                console.error('❌ Ошибка в callback ошибки:', error);
+            }
+        });
+    }
+
+    /**
+     * Уведомить о выходе из системы
+     */
+    _notifySignOut() {
+        this._signOutCallbacks.forEach(callback => {
+            try {
+                callback();
+            } catch (error) {
+                console.error('❌ Ошибка в callback выхода:', error);
+            }
+        });
+    }
+}
+
+// Создаем глобальный экземпляр сервиса
+window.authService = new AuthService();
+
 // Экспорт для использования в других модулях
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = GoogleAuth;
+    module.exports = { GoogleAuth, AuthService };
 } else {
     window.GoogleAuth = GoogleAuth;
+    window.AuthService = AuthService;
 }
