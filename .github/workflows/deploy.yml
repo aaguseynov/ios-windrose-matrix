@@ -43,21 +43,28 @@ jobs:
     - name: Inject Environment Variables
       run: |
         echo "Встраиваем переменные окружения в evaluation.html..."
+        echo "CLIENT_ID: ${{ env.CLIENT_ID }}"
+        echo "CLIENT_SECRET: ${{ env.CLIENT_SECRET }}"
+        echo "PROJECT_ID: ${{ env.PROJECT_ID }}"
         
-        # Создаем временный файл с переменными
-        cat > temp_env.js << EOF
-        // Переменные окружения для Google Drive API
-        window.CLIENT_ID = '${{ env.CLIENT_ID }}';
-        window.CLIENT_SECRET = '${{ env.CLIENT_SECRET }}';
-        window.PROJECT_ID = '${{ env.PROJECT_ID }}';
-        window.GOOGLE_DRIVE_FOLDER_ID = '14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae';
-        window.GOOGLE_DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae?usp=drive_link';
-        EOF
+        # Создаем копию файла для безопасности
+        cp evaluation.html evaluation.html.backup
         
-        # Заменяем PLACEHOLDER_* в evaluation.html на реальные значения
-        sed -i "s/PLACEHOLDER_CLIENT_ID/${{ env.CLIENT_ID }}/g" evaluation.html
-        sed -i "s/PLACEHOLDER_CLIENT_SECRET/${{ env.CLIENT_SECRET }}/g" evaluation.html
-        sed -i "s/PLACEHOLDER_PROJECT_ID/${{ env.PROJECT_ID }}/g" evaluation.html
+        # Заменяем плейсхолдеры на реальные значения
+        # Используем более надежный метод с экранированием
+        CLIENT_ID_ESCAPED=$(echo '${{ env.CLIENT_ID }}' | sed 's/[[\.*^$()+?{|]/\\&/g')
+        CLIENT_SECRET_ESCAPED=$(echo '${{ env.CLIENT_SECRET }}' | sed 's/[[\.*^$()+?{|]/\\&/g')
+        PROJECT_ID_ESCAPED=$(echo '${{ env.PROJECT_ID }}' | sed 's/[[\.*^$()+?{|]/\\&/g')
+        
+        echo "Экранированные значения:"
+        echo "CLIENT_ID_ESCAPED: $CLIENT_ID_ESCAPED"
+        echo "CLIENT_SECRET_ESCAPED: $CLIENT_SECRET_ESCAPED"
+        echo "PROJECT_ID_ESCAPED: $PROJECT_ID_ESCAPED"
+        
+        # Выполняем замену
+        sed -i "s/PLACEHOLDER_CLIENT_ID/$CLIENT_ID_ESCAPED/g" evaluation.html
+        sed -i "s/PLACEHOLDER_CLIENT_SECRET/$CLIENT_SECRET_ESCAPED/g" evaluation.html
+        sed -i "s/PLACEHOLDER_PROJECT_ID/$PROJECT_ID_ESCAPED/g" evaluation.html
         
         echo "Проверяем результат:"
         grep -A 2 -B 2 "CLIENT_ID" evaluation.html
