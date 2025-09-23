@@ -87,24 +87,34 @@ class GoogleDriveSync {
     async authenticate() {
         return new Promise((resolve) => {
             try {
-                // Используем новый Google Identity Services API
-                const tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: this.clientId,
-                    scope: 'https://www.googleapis.com/auth/drive.file',
-                    callback: (response) => {
-                        if (response.error) {
-                            console.error('Ошибка авторизации:', response.error);
-                            resolve(false);
-                        } else {
-                            console.log('Авторизация успешна');
-                            this.accessToken = response.access_token;
-                            resolve(true);
-                        }
+                // Ждем загрузки Google Identity Services API
+                const checkGoogleAPI = () => {
+                    if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                        // Используем новый Google Identity Services API
+                        const tokenClient = google.accounts.oauth2.initTokenClient({
+                            client_id: this.clientId,
+                            scope: 'https://www.googleapis.com/auth/drive.file',
+                            callback: (response) => {
+                                if (response.error) {
+                                    console.error('Ошибка авторизации:', response.error);
+                                    resolve(false);
+                                } else {
+                                    console.log('Авторизация успешна');
+                                    this.accessToken = response.access_token;
+                                    resolve(true);
+                                }
+                            }
+                        });
+                        
+                        // Запрашиваем токен
+                        tokenClient.requestAccessToken();
+                    } else {
+                        // Ждем еще немного
+                        setTimeout(checkGoogleAPI, 100);
                     }
-                });
+                };
                 
-                // Запрашиваем токен
-                tokenClient.requestAccessToken();
+                checkGoogleAPI();
             } catch (error) {
                 console.error('Ошибка авторизации:', error);
                 resolve(false);
