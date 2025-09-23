@@ -393,7 +393,7 @@
                                 💾 Оценки хранятся в Google Диске. Для дальнейшей работы не забудьте их экспортировать или сохранить!
                             </p>
                             <button id="load-from-drive" class="drive-import-button" disabled> 📥  Загрузить из Google Диска</button>
-                            <button id="save-to-drive" class="drive-export-button" disabled> 📤  Сохранить на Google Диск</button>
+                            <button id="save-to-drive" class="drive-export-button" disabled> 📤  Сохранить в Google Диск</button>
                         </div>
                     </div>
                 </div>
@@ -1152,7 +1152,7 @@
 
             // Обработчики для Google Диска
             loadButton.addEventListener('click', loadFromGoogleDrive);
-            saveButton.addEventListener('click', saveToGoogleDrive);
+            saveButton.addEventListener('click', saveEvaluationToDrive);
 
             // Добавляем обработчики для полей ввода
             addInputListeners();
@@ -1216,64 +1216,89 @@
             }
         }
 
-        async function saveToGoogleDrive() {
+        async function pickFileFromGoogleDrive() {
             try {
-                const developerSelect = document.getElementById('developer-profile');
+                console.log('Показываем Google Picker для выбора файла...');
                 
-                if (!developerSelect.value) {
-                    showNotification('Пожалуйста, выберите разработчика для оценки', 'warning');
-                    return;
-                }
+                // Показываем Google Picker
+                const result = await googleDriveSync.pickFileFromGoogleDrive();
                 
-                console.log('Начинаем сохранение для разработчика:', developerSelect.value);
-                
-                // Собираем данные компетенций
-                const competencies = {
-                    design: getCompetencyData(0, 3),
-                    ios: getCompetencyData(4, 7),
-                    threading: getCompetencyData(8, 11),
-                    di: getCompetencyData(12, 15),
-                    testing: getCompetencyData(16, 19),
-                    tools: getCompetencyData(20, 23),
-                    product: getCompetencyData(24, 27),
-                    autonomy: getCompetencyData(28, 31),
-                    quality: getCompetencyData(32, 35),
-                    teamwork: getCompetencyData(36, 39)
-                };
-                
-                console.log('Собранные компетенции:', competencies);
-
-                // Собираем все данные оценки
-                const inputs = document.querySelectorAll('.evaluation-input');
-                const evaluationData = {};
-
-                inputs.forEach((input, index) => {
-                    const value = input.type === 'number' ? parseFloat(input.value) || 0 : input.value;
-                    evaluationData[`input_${index}`] = value;
-                });
-
-                // Создаём объект оценки
-                const evaluation = {
-                    developer: developerSelect.value,
-                    date: new Date().toLocaleDateString('ru-RU'),
-                    status: 'completed',
-                    completedDate: new Date().toISOString(),
-                    data: evaluationData,
-                    competencies: competencies
-                };
-
-                // Экспортируем на Google Диск
-                const result = await googleDriveSync.exportToGoogleDrive(evaluation);
-                
-                if (result.success) {
-                    showNotification('Файл подготовлен для загрузки на Google Диск!', 'success');
+                if (result) {
+                    showNotification('Google Picker открыт. Выберите файл для загрузки.', 'info');
                 } else {
-                    showNotification('Ошибка при подготовке файла: ' + result.error, 'error');
+                    showNotification('Ошибка при открытии Google Picker', 'error');
                 }
             } catch (error) {
-                console.error('Ошибка при сохранении на Google Диск:', error);
-                showNotification('Ошибка при сохранении на Google Диск: ' + error.message, 'error');
+                console.error('Ошибка Google Picker:', error);
+                showNotification('Ошибка при открытии Google Picker: ' + error.message, 'error');
             }
+        }
+
+        // Функция сохранения оценки в Google Drive
+        async function saveEvaluationToDrive() {
+            try {
+                const developerSelect = document.getElementById('developer-profile');
+                if (!developerSelect.value) {
+                    showNotification('Сначала выберите разработчика', 'error');
+                    return;
+                }
+
+                // Собираем данные оценки
+                const evaluationData = collectEvaluationData();
+                
+                // Сохраняем в Google Drive
+                const result = await googleDriveSync.uploadToGoogleDrive(evaluationData);
+                
+                if (result.success) {
+                    showNotification('Оценка успешно сохранена в Google Drive!', 'success');
+                } else {
+                    showNotification('Ошибка при сохранении: ' + result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка при сохранении:', error);
+                showNotification('Ошибка при сохранении в Google Drive', 'error');
+            }
+        }
+
+        // Сбор данных оценки
+        function collectEvaluationData() {
+            const developerSelect = document.getElementById('developer-profile');
+            const inputs = document.querySelectorAll('.evaluation-input');
+            
+            const evaluationData = {
+                developer: developerSelect.value,
+                date: new Date().toISOString(),
+                status: 'completed',
+                competencies: {}
+            };
+            
+            // Группируем данные по компетенциям
+            const competencyNames = [
+                'design', 'ios', 'threading', 'di', 'testing', 'tools',
+                'product', 'autonomy', 'quality', 'teamwork'
+            ];
+            
+            let inputIndex = 0;
+            competencyNames.forEach(compName => {
+                evaluationData.competencies[compName] = {};
+                
+                // Каждая компетенция имеет 4 уровня (J, M, S, S+)
+                for (let level = 0; level < 4; level++) {
+                    const selfEval = parseFloat(inputs[inputIndex * 3]?.value) || 0;
+                    const managerEval = parseFloat(inputs[inputIndex * 3 + 1]?.value) || 0;
+                    const comments = inputs[inputIndex * 3 + 2]?.value || '';
+                    
+                    evaluationData.competencies[compName][`level_${level}`] = {
+                        selfEvaluation: selfEval,
+                        managerEvaluation: managerEval,
+                        comments: comments
+                    };
+                    
+                    inputIndex++;
+                }
+            });
+            
+            return evaluationData;
         }
 
 

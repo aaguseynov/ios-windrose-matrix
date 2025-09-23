@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест загрузки из Google Drive</title>
+    <script src="env-vars.js"></script>
+    <script src="config.js"></script>
+    <script src="google-drive-sync.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 14px;
+            transition: background 0.3s ease;
+        }
+        .button:hover {
+            background: #1a73e8;
+        }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .file-list {
+            margin: 20px 0;
+        }
+        .file-item {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .file-item:hover {
+            background: #f8f9fa;
+            border-color: #4285f4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Тест загрузки из Google Drive</h1>
+        <p>Этот файл предназначен для тестирования функциональности загрузки файлов оценок из Google Drive без скачивания на устройство.</p>
+        
+        <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
+            <h4 style="color: #856404; margin-bottom: 10px;">⚠️ Проблемы с авторизацией?</h4>
+            <p style="margin: 0; color: #856404; font-size: 14px;">
+                Если получаете ошибки 401 или 403, проверьте настройки Google API в файле 
+                <a href="GOOGLE_API_SETUP.md" target="_blank" style="color: #856404; font-weight: 600;">GOOGLE_API_SETUP.md</a>
+            </p>
+        </div>
+        
+        <div>
+            <button class="button" onclick="testAuthentication()">🔐 Тест авторизации</button>
+            <button class="button" onclick="testGetFiles()">📁 Получить список файлов</button>
+            <button class="button" onclick="testGooglePicker()">📂 Открыть Google Picker</button>
+            <button class="button" onclick="testImport()">📥 Тест импорта</button>
+        </div>
+        
+        <div id="status"></div>
+        <div id="file-list" class="file-list"></div>
+        <div id="loaded-data"></div>
+    </div>
+
+    <script>
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function showFileList(files) {
+            const fileListDiv = document.getElementById('file-list');
+            
+            if (files.length === 0) {
+                fileListDiv.innerHTML = '<p>Файлы не найдены</p>';
+                return;
+            }
+            
+            fileListDiv.innerHTML = `
+                <h3>📄 Найденные файлы оценок:</h3>
+                ${files.map(file => `
+                    <div class="file-item" onclick="loadFile('${file.id}', '${file.name}')">
+                        <h4>${file.name}</h4>
+                        <p>Создан: ${new Date(file.createdTime).toLocaleDateString('ru-RU')}</p>
+                        <p>Изменен: ${new Date(file.modifiedTime).toLocaleDateString('ru-RU')}</p>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        function showLoadedData(data) {
+            const dataDiv = document.getElementById('loaded-data');
+            dataDiv.innerHTML = `
+                <h3>📊 Загруженные данные:</h3>
+                <pre style="background: #f8f9fa; padding: 15px; border-radius: 6px; overflow-x: auto;">
+${JSON.stringify(data, null, 2)}
+                </pre>
+            `;
+        }
+
+        async function testAuthentication() {
+            try {
+                showStatus('Проверяем авторизацию...', 'info');
+                const result = await googleDriveSync.authenticate();
+                
+                if (result) {
+                    showStatus('✅ Авторизация успешна! Теперь можно тестировать другие функции.', 'success');
+                } else {
+                    showStatus('❌ Ошибка авторизации. Проверьте настройки Google API в GOOGLE_API_SETUP.md', 'error');
+                }
+            } catch (error) {
+                let errorMessage = error.message;
+                if (error.error === 'popup_closed_by_user') {
+                    errorMessage = 'Пользователь закрыл окно авторизации';
+                } else if (error.error === 'access_denied') {
+                    errorMessage = 'Доступ запрещен. Проверьте настройки Google API';
+                }
+                showStatus('❌ Ошибка: ' + errorMessage, 'error');
+            }
+        }
+
+        async function testGetFiles() {
+            try {
+                showStatus('Получаем список файлов...', 'info');
+                const result = await googleDriveSync.getEvaluationFiles();
+                
+                if (result.success) {
+                    showStatus(`✅ Найдено файлов: ${result.files.length}`, 'success');
+                    showFileList(result.files);
+                } else {
+                    showStatus('❌ Ошибка получения файлов: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Ошибка: ' + error.message, 'error');
+            }
+        }
+
+        async function testGooglePicker() {
+            try {
+                showStatus('Открываем Google Picker...', 'info');
+                const result = await googleDriveSync.pickFileFromGoogleDrive();
+                
+                if (result.success) {
+                    showStatus('✅ Google Picker открыт', 'success');
+                } else {
+                    showStatus('❌ Ошибка открытия Picker: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Ошибка: ' + error.message, 'error');
+            }
+        }
+
+        async function testImport() {
+            try {
+                showStatus('Тестируем импорт...', 'info');
+                const result = await googleDriveSync.importFromGoogleDrive('test');
+                
+                if (result.success) {
+                    showStatus('✅ Импорт запущен', 'success');
+                } else {
+                    showStatus('❌ Ошибка импорта: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Ошибка: ' + error.message, 'error');
+            }
+        }
+
+        async function loadFile(fileId, fileName) {
+            try {
+                showStatus(`Загружаем файл: ${fileName}...`, 'info');
+                const result = await googleDriveSync.downloadFileFromGoogleDrive(fileId, fileName);
+                
+                if (result.success) {
+                    showStatus(`✅ Файл "${fileName}" загружен!`, 'success');
+                    showLoadedData(result.data);
+                } else {
+                    showStatus('❌ Ошибка загрузки: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Ошибка: ' + error.message, 'error');
+            }
+        }
+
+        // Переопределяем функцию showNotification для тестового файла
+        function showNotification(message, type = 'info') {
+            showStatus(message, type);
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            showStatus('🚀 Тестовая страница загружена. Начните с теста авторизации.', 'info');
+        });
+    </script>
+</body>
+</html>
