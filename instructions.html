@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>iOS Windrose Матрица Компетенций</title>
+                <script src="https://aaguseynov.github.io/ios-windrose-matrix/env-vars.js"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
     <style>
         * {
             margin: 0;
@@ -360,11 +363,140 @@
 
             <div class="start-section">
                 <h2>🚀 Готовы начать оценку?</h2>
-                <p>Выберите профиль разработчика и приступайте к заполнению матрицы компетенций.</p>
+                <p>Для начала работы необходимо авторизоваться в Google Drive для сохранения и загрузки файлов оценок.</p>
                 <br>
-                <a href="evaluation.html" class="start-button">Начать оценку</a>
+                <button id="start-evaluation-btn" class="start-button">🔐 Авторизоваться и начать оценку</button>
+                <div id="auth-status" style="margin-top: 15px; font-size: 14px; color: #4a5568;"></div>
             </div>
         </div>
     </div>
+
+    <script>
+        // Инициализация системы авторизации
+        let auth = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Инициализация страницы инструкций...');
+            
+            // Инициализируем авторизацию
+            initAuth();
+            
+            // Обработчик кнопки "Начать оценку"
+            const startBtn = document.getElementById('start-evaluation-btn');
+            const authStatus = document.getElementById('auth-status');
+            
+            startBtn.addEventListener('click', async function() {
+                console.log('🔐 Запрос авторизации...');
+                
+                if (!auth) {
+                    authStatus.innerHTML = '❌ Ошибка инициализации авторизации';
+                    return;
+                }
+                
+                try {
+                    const success = await auth.signIn();
+                    if (success) {
+                        authStatus.innerHTML = '✅ Авторизация успешна! Переход на страницу оценки...';
+                        setTimeout(() => {
+                            window.location.href = 'evaluation.html';
+                        }, 1000);
+                    }
+                } catch (error) {
+                    console.error('Ошибка авторизации:', error);
+                    authStatus.innerHTML = '❌ Ошибка авторизации: ' + error.message;
+                }
+            });
+        });
+
+        // Инициализация авторизации
+        async function initAuth() {
+            try {
+                console.log('🔧 Инициализация Google Auth...');
+                
+                // Ждем загрузки env-vars.js
+                console.log('⏳ Ожидание загрузки env-vars.js...');
+                await waitForEnvVars();
+                console.log('✅ env-vars.js загружен');
+                
+                auth = new GoogleAuth(config);
+                
+                // Настройка callbacks
+                auth.onAuthSuccess = function(user) {
+                    console.log('✅ Авторизация успешна:', user.getBasicProfile().getName());
+                    updateAuthStatus('Авторизован: ' + user.getBasicProfile().getName());
+                };
+                
+                auth.onAuthError = function(message) {
+                    console.error('❌ Ошибка авторизации:', message);
+                    updateAuthStatus('Ошибка авторизации: ' + message);
+                };
+                
+                // Инициализируем API
+                const initialized = await auth.initialize();
+                if (initialized) {
+                    console.log('✅ Google Auth API готов к работе');
+                    updateAuthStatus('Система готова к авторизации');
+                } else {
+                    console.error('❌ Не удалось инициализировать Google Auth API');
+                    updateAuthStatus('❌ Ошибка инициализации Google API');
+                }
+                
+            } catch (error) {
+                console.error('❌ Критическая ошибка инициализации:', error);
+                updateAuthStatus('❌ Критическая ошибка: ' + error.message);
+            }
+        }
+
+        // Обновление статуса авторизации
+        function updateAuthStatus(message) {
+            const authStatus = document.getElementById('auth-status');
+            if (authStatus) {
+                authStatus.innerHTML = message;
+            }
+        }
+
+        // Функция показа уведомлений (для совместимости с auth.js)
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 10001;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                max-width: 400px;
+            `;
+
+            const colors = {
+                success: 'linear-gradient(135deg, #48bb78, #38a169)',
+                error: 'linear-gradient(135deg, #f56565, #e53e3e)',
+                warning: 'linear-gradient(135deg, #ed8936, #dd6b20)',
+                info: 'linear-gradient(135deg, #4299e1, #3182ce)'
+            };
+
+            notification.style.background = colors[type] || colors.info;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 4000);
+        }
+    </script>
 </body>
 </html>
