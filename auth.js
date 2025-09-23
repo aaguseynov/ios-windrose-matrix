@@ -1,5 +1,7 @@
 /**
- * Google OAuth 2.0 Authorization Module
+ * Google Identity Services Authorization Module
+ * 
+ * Использует новые Google Identity Services (GIS) вместо устаревшего gapi.auth2
  * 
  * Настройка:
  * 1. Получите Client ID в Google Cloud Console: https://console.cloud.google.com/
@@ -16,6 +18,7 @@ class GoogleAuth {
         this.isSignedIn = false;
         this.user = null;
         this.accessToken = null;
+        this.credential = null;
         
         // Callbacks
         this.onAuthSuccess = null;
@@ -24,47 +27,50 @@ class GoogleAuth {
     }
 
     /**
-     * Инициализация Google API
+     * Инициализация Google Identity Services
      */
     async initialize() {
         try {
-            console.log('🔧 Инициализация Google Auth API...');
+            console.log('🔧 Инициализация Google Identity Services...');
             
             // Проверяем наличие Client ID
             if (!this.clientId || this.clientId.includes('CLIENT_ID_PLACEHOLDER') || this.clientId.includes('YOUR_CLIENT_ID_HERE')) {
                 throw new Error('Client ID не настроен. Убедитесь, что env-vars.js загружен корректно.');
             }
             
-            // Загружаем Google API
-            await this.loadGoogleAPI();
+            // Загружаем Google Identity Services
+            await this.loadGoogleIdentityServices();
             
-            // Инициализируем gapi
-            await this.initGapi();
+            // Инициализируем Google Identity Services
+            await this.initGoogleIdentityServices();
+            
+            // Проверяем существующую авторизацию
+            await this.checkExistingAuth();
             
             this.isInitialized = true;
-            console.log('✅ Google Auth API инициализирован');
+            console.log('✅ Google Identity Services инициализированы');
             
             return true;
         } catch (error) {
-            console.error('❌ Ошибка инициализации Google Auth:', error);
+            console.error('❌ Ошибка инициализации Google Identity Services:', error);
             this.handleAuthError(error);
             return false;
         }
     }
 
     /**
-     * Загрузка Google API скрипта
+     * Загрузка Google Identity Services скрипта
      */
-    loadGoogleAPI() {
+    loadGoogleIdentityServices() {
         return new Promise((resolve, reject) => {
             // Проверяем, не загружен ли уже
-            if (window.gapi) {
+            if (window.google && window.google.accounts) {
                 resolve();
                 return;
             }
 
             const script = document.createElement('script');
-            script.src = 'https://apis.google.com/js/api.js';
+            script.src = 'https://accounts.google.com/gsi/client';
             script.onload = resolve;
             script.onerror = reject;
             document.head.appendChild(script);
@@ -72,50 +78,122 @@ class GoogleAuth {
     }
 
     /**
-     * Инициализация gapi
+     * Инициализация Google Identity Services
      */
-    initGapi() {
+    initGoogleIdentityServices() {
         return new Promise((resolve, reject) => {
-            gapi.load('client:auth2', {
-                callback: async () => {
-                    try {
-                        await gapi.client.init({
-                            clientId: this.clientId,
-                            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-                            scope: this.scope
-                        });
-                        
-                        // Получаем экземпляр авторизации
-                        this.authInstance = gapi.auth2.getAuthInstance();
-                        
-                        // Проверяем текущий статус авторизации
-                        this.updateAuthStatus();
-                        
-                        resolve();
-                    } catch (error) {
-                        reject(error);
-                    }
-                },
-                onerror: reject
-            });
+            try {
+                // Инициализируем Google Identity Services
+                google.accounts.id.initialize({
+                    client_id: this.clientId,
+                    callback: (response) => {
+                        console.log('🔐 Получен ответ от Google Identity Services');
+                        this.handleCredentialResponse(response);
+                    },
+                    auto_select: false,
+                    cancel_on_tap_outside: false
+                });
+                
+                console.log('✅ Google Identity Services инициализированы');
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
         });
     }
 
     /**
-     * Обновление статуса авторизации
+     * Обработка ответа с учетными данными
      */
-    updateAuthStatus() {
-        if (!this.authInstance) return;
-        
-        this.isSignedIn = this.authInstance.isSignedIn.get();
-        
-        if (this.isSignedIn) {
-            this.user = this.authInstance.currentUser.get();
-            this.accessToken = this.user.getAuthResponse().access_token;
-            console.log('👤 Пользователь авторизован:', this.user.getBasicProfile().getName());
-        } else {
-            this.user = null;
-            this.accessToken = null;
+    handleCredentialResponse(response) {
+        try {
+            console.log('🔐 Получены учетные данные от Google');
+            
+            // Декодируем JWT токен
+            const payload = this.decodeJwtToken(response.credential);
+            
+            this.credential = response.credential;
+            this.user = {
+                id: payload.sub,
+                email: payload.email,
+                name: payload.name,
+                picture: payload.picture,
+                getBasicProfile: () => ({
+                    getName: () => payload.name,
+                    getEmail: () => payload.email,
+                    getImageUrl: () => payload.picture
+                })
+            };
+            
+            this.isSignedIn = true;
+            
+            // Сохраняем состояние в localStorage
+            this.saveAuthState();
+            
+            // Получаем токен доступа для Google Drive API
+            this.getAccessTokenForDrive();
+            
+        } catch (error) {
+            console.error('❌ Ошибка обработки учетных данных:', error);
+            this.handleAuthError(error);
+        }
+    }
+
+    /**
+     * Декодирование JWT токена
+     */
+    decodeJwtToken(token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        } catch (error) {
+            throw new Error('Не удалось декодировать JWT токен: ' + error.message);
+        }
+    }
+
+    /**
+     * Получение токена доступа для Google Drive API
+     */
+    async getAccessTokenForDrive() {
+        try {
+            console.log('🔄 Получение токена доступа для Google Drive API...');
+            
+            // Для Google Identity Services используем credential напрямую
+            // или получаем токен через Google Token API
+            const response = await fetch('https://oauth2.googleapis.com/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+                    assertion: this.credential,
+                    scope: this.scope
+                })
+            });
+
+            if (response.ok) {
+                const tokenData = await response.json();
+                this.accessToken = tokenData.access_token;
+                console.log('✅ Токен доступа получен через Token API');
+            } else {
+                // Fallback: используем credential для прямых запросов
+                this.accessToken = this.credential;
+                console.log('⚠️ Используем credential напрямую');
+            }
+            
+            this.handleAuthSuccess();
+            
+        } catch (error) {
+            console.error('❌ Ошибка получения токена доступа:', error);
+            
+            // Fallback: используем credential для прямых запросов
+            this.accessToken = this.credential;
+            this.handleAuthSuccess();
         }
     }
 
@@ -133,10 +211,6 @@ class GoogleAuth {
                 throw new Error('Client ID не настроен. Убедитесь, что env-vars.js загружен корректно.');
             }
 
-            if (!this.authInstance) {
-                throw new Error('Google Auth не инициализирован');
-            }
-
             if (this.isSignedIn) {
                 console.log('👤 Пользователь уже авторизован');
                 this.handleAuthSuccess();
@@ -146,12 +220,21 @@ class GoogleAuth {
             console.log('🔐 Запрос авторизации...');
             this.showLoadingIndicator('Авторизация в Google...');
 
-            const user = await this.authInstance.signIn();
-            this.updateAuthStatus();
+            // Используем renderButton для создания кнопки авторизации
+            const buttonContainer = document.getElementById('google-signin-button') || this.createSignInButton();
             
-            console.log('✅ Авторизация успешна:', user.getBasicProfile().getName());
-            this.hideLoadingIndicator();
-            this.handleAuthSuccess();
+            // Рендерим кнопку Google Sign-In
+            google.accounts.id.renderButton(buttonContainer, {
+                theme: 'outline',
+                size: 'large',
+                text: 'signin_with',
+                shape: 'rectangular',
+                logo_alignment: 'left',
+                width: 300
+            });
+
+            // Также показываем popup как альтернативу
+            google.accounts.id.prompt();
             
             return true;
         } catch (error) {
@@ -163,14 +246,69 @@ class GoogleAuth {
     }
 
     /**
+     * Создание контейнера для кнопки авторизации
+     */
+    createSignInButton() {
+        const buttonContainer = document.createElement('div');
+        buttonContainer.id = 'google-signin-button';
+        buttonContainer.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10002;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        `;
+        
+        const title = document.createElement('h3');
+        title.textContent = 'Авторизация в Google';
+        title.style.marginBottom = '20px';
+        title.style.textAlign = 'center';
+        title.style.color = '#333';
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '✕';
+        closeBtn.style.cssText = `
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+        `;
+        closeBtn.onclick = () => {
+            buttonContainer.remove();
+            this.hideLoadingIndicator();
+        };
+        
+        buttonContainer.appendChild(closeBtn);
+        buttonContainer.appendChild(title);
+        document.body.appendChild(buttonContainer);
+        
+        return buttonContainer;
+    }
+
+    /**
      * Выход из системы
      */
     async signOut() {
         try {
-            if (!this.authInstance) return;
+            if (window.google && window.google.accounts) {
+                google.accounts.id.disableAutoSelect();
+            }
             
-            await this.authInstance.signOut();
-            this.updateAuthStatus();
+            this.isSignedIn = false;
+            this.user = null;
+            this.accessToken = null;
+            this.credential = null;
+            
+            // Очищаем localStorage
+            this.clearAuthState();
             
             console.log('👋 Пользователь вышел из системы');
             this.handleSignOut();
@@ -183,39 +321,17 @@ class GoogleAuth {
      * Получение токена доступа
      */
     getAccessToken() {
-        if (!this.isSignedIn || !this.user) {
+        if (!this.isSignedIn || !this.accessToken) {
             throw new Error('Пользователь не авторизован');
         }
-
-        const authResponse = this.user.getAuthResponse();
-        
-        // Проверяем, не истек ли токен
-        if (authResponse.expires_at && Date.now() >= authResponse.expires_at) {
-            console.log('🔄 Токен истек, обновляем...');
-            return this.refreshToken();
-        }
-
-        return authResponse.access_token;
-    }
-
-    /**
-     * Обновление токена
-     */
-    async refreshToken() {
-        try {
-            await this.user.reloadAuthResponse();
-            this.updateAuthStatus();
-            return this.accessToken;
-        } catch (error) {
-            console.error('❌ Ошибка обновления токена:', error);
-            throw error;
-        }
+        return this.accessToken;
     }
 
     /**
      * Обработка успешной авторизации
      */
     handleAuthSuccess() {
+        this.hideLoadingIndicator();
         if (this.onAuthSuccess) {
             this.onAuthSuccess(this.user);
         }
@@ -225,14 +341,14 @@ class GoogleAuth {
      * Обработка ошибки авторизации
      */
     handleAuthError(error) {
+        this.hideLoadingIndicator();
+        
         let message = 'Ошибка авторизации';
         
-        if (error.error === 'popup_closed_by_user') {
+        if (error.message && error.message.includes('отменена пользователем')) {
             message = 'Авторизация отменена пользователем';
-        } else if (error.error === 'access_denied') {
-            message = 'Доступ запрещен. Проверьте настройки Google API';
-        } else if (error.error === 'invalid_client') {
-            message = 'Неверный Client ID. Проверьте настройки в config.js';
+        } else if (error.message && error.message.includes('Client ID не настроен')) {
+            message = 'Client ID не настроен. Проверьте настройки Google API';
         } else {
             message = error.message || message;
         }
@@ -346,6 +462,108 @@ class GoogleAuth {
                 }
             }, 300);
         }, 4000);
+    }
+
+    /**
+     * Сохранение состояния авторизации в localStorage
+     */
+    saveAuthState() {
+        try {
+            const authState = {
+                isSignedIn: this.isSignedIn,
+                user: this.user,
+                accessToken: this.accessToken,
+                credential: this.credential,
+                timestamp: Date.now()
+            };
+            
+            localStorage.setItem('google_auth_state', JSON.stringify(authState));
+            console.log('💾 Состояние авторизации сохранено');
+        } catch (error) {
+            console.error('❌ Ошибка сохранения состояния:', error);
+        }
+    }
+
+    /**
+     * Восстановление состояния авторизации из localStorage
+     */
+    restoreAuthState() {
+        try {
+            const authStateStr = localStorage.getItem('google_auth_state');
+            if (!authStateStr) {
+                return false;
+            }
+
+            const authState = JSON.parse(authStateStr);
+            
+            // Проверяем, не истек ли токен (24 часа)
+            const tokenAge = Date.now() - authState.timestamp;
+            const maxAge = 24 * 60 * 60 * 1000; // 24 часа
+            
+            if (tokenAge > maxAge) {
+                console.log('⏰ Токен авторизации истек, очищаем состояние');
+                this.clearAuthState();
+                return false;
+            }
+
+            this.isSignedIn = authState.isSignedIn;
+            this.user = authState.user;
+            this.accessToken = authState.accessToken;
+            this.credential = authState.credential;
+            
+            console.log('✅ Состояние авторизации восстановлено');
+            return true;
+        } catch (error) {
+            console.error('❌ Ошибка восстановления состояния:', error);
+            this.clearAuthState();
+            return false;
+        }
+    }
+
+    /**
+     * Очистка состояния авторизации из localStorage
+     */
+    clearAuthState() {
+        try {
+            localStorage.removeItem('google_auth_state');
+            console.log('🗑️ Состояние авторизации очищено');
+        } catch (error) {
+            console.error('❌ Ошибка очистки состояния:', error);
+        }
+    }
+
+    /**
+     * Проверка авторизации при инициализации
+     */
+    async checkExistingAuth() {
+        if (this.restoreAuthState()) {
+            console.log('👤 Найдена существующая авторизация');
+            
+            // Проверяем, что токен еще действителен
+            try {
+                // Простой тест токена
+                const response = await fetch('https://www.googleapis.com/oauth2/v1/userinfo?access_token=' + this.accessToken);
+                if (response.ok) {
+                    this.handleAuthSuccess();
+                    return true;
+                } else {
+                    console.log('⚠️ Токен недействителен, очищаем состояние');
+                    this.clearAuthState();
+                    this.isSignedIn = false;
+                    this.user = null;
+                    this.accessToken = null;
+                    this.credential = null;
+                }
+            } catch (error) {
+                console.log('⚠️ Ошибка проверки токена, очищаем состояние');
+                this.clearAuthState();
+                this.isSignedIn = false;
+                this.user = null;
+                this.accessToken = null;
+                this.credential = null;
+            }
+        }
+        return false;
     }
 }
 

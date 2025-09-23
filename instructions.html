@@ -422,8 +422,14 @@
                 
                 // Настройка callbacks
                 auth.onAuthSuccess = function(user) {
-                    console.log('✅ Авторизация успешна:', user.getBasicProfile().getName());
-                    updateAuthStatus('Авторизован: ' + user.getBasicProfile().getName());
+                    console.log('✅ Авторизация успешна:', user ? user.name || user.getBasicProfile().getName() : 'Демо-режим');
+                    const userName = user ? (user.name || user.getBasicProfile().getName()) : 'Пользователь';
+                    updateAuthStatus('Авторизован: ' + userName);
+                    
+                    // Переход на страницу заполнения через 1.5 секунды
+                    setTimeout(() => {
+                        window.location.href = 'evaluation.html';
+                    }, 1500);
                 };
                 
                 auth.onAuthError = function(message) {

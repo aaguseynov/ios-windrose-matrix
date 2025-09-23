@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест новой авторизации Google Identity Services</title>
+    <script src="https://aaguseynov.github.io/ios-windrose-matrix/env-vars.js"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover { background: #3367d6; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .user-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .user-info img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Тест Google Identity Services</h1>
+        
+        <div id="status" class="status info">
+            ⏳ Инициализация системы...
+        </div>
+        
+        <div>
+            <button id="signin-btn" onclick="signIn()" disabled>
+                🔐 Авторизация в Google
+            </button>
+            <button id="signout-btn" onclick="signOut()" disabled>
+                👋 Выйти
+            </button>
+            <button id="test-drive-btn" onclick="testDriveAPI()" disabled>
+                📁 Тест Google Drive API
+            </button>
+        </div>
+        
+        <!-- Контейнер для кнопки Google Sign-In -->
+        <div id="google-signin-button" style="margin: 20px 0; display: none;"></div>
+        
+        <div id="user-info" class="user-info" style="display: none;">
+            <h3>👤 Информация о пользователе</h3>
+            <div id="user-details"></div>
+        </div>
+        
+        <div id="drive-results" style="display: none;">
+            <h3>📁 Результаты Google Drive API</h3>
+            <div id="drive-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let auth = null;
+        
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Инициализация тестовой страницы...');
+            
+            try {
+                // Ждем загрузки env-vars.js
+                console.log('⏳ Ожидание загрузки env-vars.js...');
+                await waitForEnvVars();
+                console.log('✅ env-vars.js загружен');
+                
+                // Создаем экземпляр GoogleAuth
+                auth = new GoogleAuth(config);
+                
+                // Настраиваем callbacks
+                auth.onAuthSuccess = function(user) {
+                    console.log('✅ Авторизация успешна:', user);
+                    updateStatus('✅ Авторизация успешна!', 'success');
+                    showUserInfo(user);
+                    document.getElementById('signin-btn').disabled = true;
+                    document.getElementById('signout-btn').disabled = false;
+                    document.getElementById('test-drive-btn').disabled = false;
+                };
+                
+                auth.onAuthError = function(error) {
+                    console.error('❌ Ошибка авторизации:', error);
+                    updateStatus(`❌ Ошибка авторизации: ${error}`, 'error');
+                };
+                
+                // Инициализируем Google Auth
+                const success = await auth.initialize();
+                if (success) {
+                    updateStatus('✅ Google Identity Services готовы к работе', 'success');
+                    document.getElementById('signin-btn').disabled = false;
+                } else {
+                    updateStatus('❌ Не удалось инициализировать Google Identity Services', 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ Ошибка инициализации:', error);
+                updateStatus(`❌ Ошибка инициализации: ${error.message}`, 'error');
+            }
+        });
+        
+        // Функции
+        async function signIn() {
+            if (!auth) {
+                updateStatus('❌ Система авторизации не инициализирована', 'error');
+                return;
+            }
+            
+            updateStatus('⏳ Запрос авторизации...', 'info');
+            
+            // Показываем контейнер для кнопки Google Sign-In
+            const buttonContainer = document.getElementById('google-signin-button');
+            buttonContainer.style.display = 'block';
+            
+            await auth.signIn();
+        }
+        
+        async function signOut() {
+            if (!auth) {
+                updateStatus('❌ Система авторизации не инициализирована', 'error');
+                return;
+            }
+            
+            await auth.signOut();
+            updateStatus('👋 Выход выполнен', 'info');
+            document.getElementById('user-info').style.display = 'none';
+            document.getElementById('drive-results').style.display = 'none';
+            document.getElementById('google-signin-button').style.display = 'none';
+            document.getElementById('signin-btn').disabled = false;
+            document.getElementById('signout-btn').disabled = true;
+            document.getElementById('test-drive-btn').disabled = true;
+        }
+        
+        async function testDriveAPI() {
+            if (!auth || !auth.isSignedIn) {
+                updateStatus('❌ Необходимо авторизоваться', 'error');
+                return;
+            }
+            
+            updateStatus('⏳ Тестирование Google Drive API...', 'info');
+            
+            try {
+                const accessToken = auth.getAccessToken();
+                console.log('🔑 Токен доступа:', accessToken ? 'получен' : 'не получен');
+                
+                // Тестовый запрос к Google Drive API
+                const response = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(id,name,mimeType)', {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Ошибка API: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('📁 Файлы из Google Drive:', data);
+                
+                updateStatus(`✅ Google Drive API работает! Найдено файлов: ${data.files.length}`, 'success');
+                showDriveResults(data.files);
+                
+            } catch (error) {
+                console.error('❌ Ошибка тестирования Google Drive API:', error);
+                updateStatus(`❌ Ошибка Google Drive API: ${error.message}`, 'error');
+            }
+        }
+        
+        function updateStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+        
+        function showUserInfo(user) {
+            const userInfoEl = document.getElementById('user-info');
+            const userDetailsEl = document.getElementById('user-details');
+            
+            if (user && user.getBasicProfile) {
+                const profile = user.getBasicProfile();
+                userDetailsEl.innerHTML = `
+                    <img src="${profile.getImageUrl()}" alt="Avatar">
+                    <strong>Имя:</strong> ${profile.getName()}<br>
+                    <strong>Email:</strong> ${profile.getEmail()}<br>
+                    <strong>ID:</strong> ${user.id}
+                `;
+            } else {
+                userDetailsEl.innerHTML = `
+                    <strong>Имя:</strong> ${user.name || 'Неизвестно'}<br>
+                    <strong>Email:</strong> ${user.email || 'Неизвестно'}<br>
+                    <strong>ID:</strong> ${user.id || 'Неизвестно'}
+                `;
+            }
+            
+            userInfoEl.style.display = 'block';
+        }
+        
+        function showDriveResults(files) {
+            const driveResultsEl = document.getElementById('drive-results');
+            const driveContentEl = document.getElementById('drive-content');
+            
+            if (files.length === 0) {
+                driveContentEl.innerHTML = '<p>Файлы не найдены</p>';
+            } else {
+                const filesList = files.map(file => `
+                    <div style="padding: 10px; border: 1px solid #ddd; margin: 5px 0; border-radius: 4px;">
+                        <strong>${file.name}</strong><br>
+                        <small>ID: ${file.id} | Тип: ${file.mimeType}</small>
+                    </div>
+                `).join('');
+                
+                driveContentEl.innerHTML = filesList;
+            }
+            
+            driveResultsEl.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

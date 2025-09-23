@@ -1403,8 +1403,9 @@
                 
                 // Настройка callbacks для авторизации
                 auth.onAuthSuccess = function(user) {
-                    console.log('✅ Авторизация успешна:', user.getBasicProfile().getName());
-                    showNotification('Авторизован: ' + user.getBasicProfile().getName(), 'success');
+                    console.log('✅ Авторизация успешна:', user ? user.name || user.getBasicProfile().getName() : 'Демо-режим');
+                    const userName = user ? (user.name || user.getBasicProfile().getName()) : 'Пользователь';
+                    showNotification('Авторизован: ' + userName, 'success');
                 };
                 
                 auth.onAuthError = function(message) {
@@ -1421,6 +1422,16 @@
                 const authInitialized = await auth.initialize();
                 if (!authInitialized) {
                     throw new Error('Не удалось инициализировать авторизацию');
+                }
+                
+                // Проверяем, авторизован ли пользователь
+                if (auth.isSignedIn) {
+                    console.log('👤 Пользователь уже авторизован');
+                    const userName = auth.user ? (auth.user.name || auth.user.getBasicProfile().getName()) : 'Пользователь';
+                    showNotification('Авторизован: ' + userName, 'success');
+                } else {
+                    console.log('⚠️ Пользователь не авторизован');
+                    showNotification('Необходимо авторизоваться в Google', 'warning');
                 }
                 
                 console.log('🔧 Инициализация Google Drive...');
