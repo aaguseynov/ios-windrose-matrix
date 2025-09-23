@@ -14,6 +14,8 @@ jobs:
       contents: write
       pages: write
       id-token: write
+      actions: write
+      deployments: write
     env:
       CLIENT_ID: ${{ secrets.CLIENT_ID }}
       CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
@@ -102,6 +104,11 @@ jobs:
       
     - name: Verify Deployment
       run: |
-        echo "Деплой завершен. Переменные встроены в evaluation.html:"
+        echo "Деплой завершен. Проверяем доступность файлов:"
         echo "evaluation.html: https://aaguseynov.github.io/ios-windrose-matrix/evaluation.html"
+        echo "env-vars.js: https://aaguseynov.github.io/ios-windrose-matrix/env-vars.js"
         echo "Проверьте работу Google Drive API на странице!"
+        
+        # Проверяем доступность файла env-vars.js
+        echo "Проверяем доступность env-vars.js..."
+        curl -I https://aaguseynov.github.io/ios-windrose-matrix/env-vars.js || echo "Файл env-vars.js недоступен"
