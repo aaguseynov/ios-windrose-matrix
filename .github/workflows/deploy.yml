@@ -75,13 +75,15 @@ jobs:
         ls -la
         echo "Проверяем содержимое evaluation.html:"
         grep -A 3 -B 1 "env-vars.js" evaluation.html || echo "env-vars.js не найден в evaluation.html"
-        echo "Проверяем env-config.js:"
-        if [ -f "env-config.js" ]; then
-          echo "✅ env-config.js найден"
-          echo "Размер файла: $(wc -c < env-config.js) байт"
-          echo "Права доступа: $(ls -la env-config.js)"
+        echo "Проверяем env-vars.js:"
+        if [ -f "env-vars.js" ]; then
+          echo "✅ env-vars.js найден"
+          echo "Размер файла: $(wc -c < env-vars.js) байт"
+          echo "Права доступа: $(ls -la env-vars.js)"
+          echo "Содержимое env-vars.js:"
+          cat env-vars.js
         else
-          echo "❌ env-config.js НЕ найден!"
+          echo "❌ env-vars.js НЕ найден!"
         fi
         
         # Дополнительная проверка - создаем тестовый файл
