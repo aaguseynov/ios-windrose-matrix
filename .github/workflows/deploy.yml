@@ -40,15 +40,13 @@ jobs:
         env | grep -i client || echo "No CLIENT variables found"
         env | grep -i project || echo "No PROJECT variables found"
         
-    - name: Create Environment File
+    - name: Inject Environment Variables
       run: |
-        # Создаем отдельный файл с переменными окружения
-        echo "Создаем env-vars.js с переменными окружения..."
+        echo "Встраиваем переменные окружения в evaluation.html..."
         
-        cat > env-vars.js << EOF
+        # Создаем временный файл с переменными
+        cat > temp_env.js << EOF
         // Переменные окружения для Google Drive API
-        // Этот файл создается автоматически во время деплоя
-        
         window.CLIENT_ID = '${{ env.CLIENT_ID }}';
         window.CLIENT_SECRET = '${{ env.CLIENT_SECRET }}';
         window.PROJECT_ID = '${{ env.PROJECT_ID }}';
@@ -56,11 +54,13 @@ jobs:
         window.GOOGLE_DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae?usp=drive_link';
         EOF
         
-        # Проверяем создание файла
-        echo "Проверяем создание env-vars.js:"
-        ls -la env-vars.js
-        echo "Содержимое env-vars.js:"
-        cat env-vars.js
+        # Заменяем PLACEHOLDER_* в evaluation.html на реальные значения
+        sed -i "s/PLACEHOLDER_CLIENT_ID/${{ env.CLIENT_ID }}/g" evaluation.html
+        sed -i "s/PLACEHOLDER_CLIENT_SECRET/${{ env.CLIENT_SECRET }}/g" evaluation.html
+        sed -i "s/PLACEHOLDER_PROJECT_ID/${{ env.PROJECT_ID }}/g" evaluation.html
+        
+        echo "Проверяем результат:"
+        grep -A 2 -B 2 "CLIENT_ID" evaluation.html
         
     - name: Verify Files Before Upload
       run: |
