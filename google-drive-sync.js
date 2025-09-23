@@ -16,6 +16,7 @@ class GoogleDriveSync {
         this.clientId = config.clientId;
         this.clientSecret = config.clientSecret;
         this.projectId = config.projectId;
+        this.accessToken = null;
     }
 
     // Проверка переменных окружения
@@ -84,34 +85,31 @@ class GoogleDriveSync {
 
     // Авторизация пользователя
     async authenticate() {
-        if (!this.isInitialized) {
-            const initialized = await this.initializeGapi();
-            if (!initialized) return false;
-        }
-        
-        try {
-            // Используем новый Google Identity Services API
-            const tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: this.clientId,
-                scope: 'https://www.googleapis.com/auth/drive.file',
-                callback: (response) => {
-                    if (response.error) {
-                        console.error('Ошибка авторизации:', response.error);
-                        return false;
+        return new Promise((resolve) => {
+            try {
+                // Используем новый Google Identity Services API
+                const tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: this.clientId,
+                    scope: 'https://www.googleapis.com/auth/drive.file',
+                    callback: (response) => {
+                        if (response.error) {
+                            console.error('Ошибка авторизации:', response.error);
+                            resolve(false);
+                        } else {
+                            console.log('Авторизация успешна');
+                            this.accessToken = response.access_token;
+                            resolve(true);
+                        }
                     }
-                    console.log('Авторизация успешна');
-                    return true;
-                }
-            });
-            
-            // Запрашиваем токен
-            tokenClient.requestAccessToken();
-            
-            return true;
-        } catch (error) {
-            console.error('Ошибка авторизации:', error);
-            return false;
-        }
+                });
+                
+                // Запрашиваем токен
+                tokenClient.requestAccessToken();
+            } catch (error) {
+                console.error('Ошибка авторизации:', error);
+                resolve(false);
+            }
+        });
     }
 
     // Прямая загрузка файла в Google Диск
@@ -141,7 +139,7 @@ class GoogleDriveSync {
             const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token}`
+                    'Authorization': `Bearer ${this.accessToken}`
                 },
                 body: form
             });
