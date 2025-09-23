@@ -40,34 +40,34 @@ jobs:
         env | grep -i client || echo "No CLIENT variables found"
         env | grep -i project || echo "No PROJECT variables found"
         
-    - name: Inject Environment Variables
+    - name: Create Environment File
       run: |
-        echo "Встраиваем переменные окружения в evaluation.html..."
+        echo "Создаем env-vars.js с переменными окружения..."
         echo "CLIENT_ID: ${{ env.CLIENT_ID }}"
         echo "CLIENT_SECRET: ${{ env.CLIENT_SECRET }}"
         echo "PROJECT_ID: ${{ env.PROJECT_ID }}"
         
-        # Создаем копию файла для безопасности
-        cp evaluation.html evaluation.html.backup
+        # Создаем файл env-vars.js
+        cat > env-vars.js << 'EOF'
+        // Переменные окружения для Google Drive API
+        // Этот файл создается автоматически во время деплоя
+        
+        window.CLIENT_ID = 'CLIENT_ID_PLACEHOLDER';
+        window.CLIENT_SECRET = 'CLIENT_SECRET_PLACEHOLDER';
+        window.PROJECT_ID = 'PROJECT_ID_PLACEHOLDER';
+        window.GOOGLE_DRIVE_FOLDER_ID = '14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae';
+        window.GOOGLE_DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/14RzE0Souwr-gzb5D0sNqsPH6nMI0J3Ae?usp=drive_link';
+        EOF
         
         # Заменяем плейсхолдеры на реальные значения
-        # Используем более надежный метод с экранированием
-        CLIENT_ID_ESCAPED=$(echo '${{ env.CLIENT_ID }}' | sed 's/[[\.*^$()+?{|]/\\&/g')
-        CLIENT_SECRET_ESCAPED=$(echo '${{ env.CLIENT_SECRET }}' | sed 's/[[\.*^$()+?{|]/\\&/g')
-        PROJECT_ID_ESCAPED=$(echo '${{ env.PROJECT_ID }}' | sed 's/[[\.*^$()+?{|]/\\&/g')
+        sed -i "s/CLIENT_ID_PLACEHOLDER/${{ env.CLIENT_ID }}/g" env-vars.js
+        sed -i "s/CLIENT_SECRET_PLACEHOLDER/${{ env.CLIENT_SECRET }}/g" env-vars.js
+        sed -i "s/PROJECT_ID_PLACEHOLDER/${{ env.PROJECT_ID }}/g" env-vars.js
         
-        echo "Экранированные значения:"
-        echo "CLIENT_ID_ESCAPED: $CLIENT_ID_ESCAPED"
-        echo "CLIENT_SECRET_ESCAPED: $CLIENT_SECRET_ESCAPED"
-        echo "PROJECT_ID_ESCAPED: $PROJECT_ID_ESCAPED"
-        
-        # Выполняем замену
-        sed -i "s/PLACEHOLDER_CLIENT_ID/$CLIENT_ID_ESCAPED/g" evaluation.html
-        sed -i "s/PLACEHOLDER_CLIENT_SECRET/$CLIENT_SECRET_ESCAPED/g" evaluation.html
-        sed -i "s/PLACEHOLDER_PROJECT_ID/$PROJECT_ID_ESCAPED/g" evaluation.html
-        
-        echo "Проверяем результат:"
-        grep -A 2 -B 2 "CLIENT_ID" evaluation.html
+        echo "Проверяем создание env-vars.js:"
+        ls -la env-vars.js
+        echo "Содержимое env-vars.js:"
+        cat env-vars.js
         
     - name: Verify Files Before Upload
       run: |
