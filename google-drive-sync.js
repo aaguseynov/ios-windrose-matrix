@@ -90,19 +90,24 @@ class GoogleDriveSync {
         }
         
         try {
-            const authInstance = gapi.auth2.getAuthInstance();
-            
-            // Проверяем, авторизован ли пользователь
-            if (authInstance.isSignedIn.get()) {
-                return true;
-            }
-            
-            // Если не авторизован, запрашиваем авторизацию
-            const user = await authInstance.signIn({
-                scope: 'https://www.googleapis.com/auth/drive.file'
+            // Используем новый Google Identity Services API
+            const tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: this.clientId,
+                scope: 'https://www.googleapis.com/auth/drive.file',
+                callback: (response) => {
+                    if (response.error) {
+                        console.error('Ошибка авторизации:', response.error);
+                        return false;
+                    }
+                    console.log('Авторизация успешна');
+                    return true;
+                }
             });
             
-            return user.isSignedIn();
+            // Запрашиваем токен
+            tokenClient.requestAccessToken();
+            
+            return true;
         } catch (error) {
             console.error('Ошибка авторизации:', error);
             return false;
