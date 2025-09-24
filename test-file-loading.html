@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест загрузки файлов</title>
+    <script src="https://aaguseynov.github.io/ios-windrose-matrix/env-vars.js"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="drive.js"></script>
+    <script src="file-manager.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover { background: #3367d6; }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .test-results {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .test-item {
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin: 5px 0;
+            border-radius: 4px;
+            background: white;
+        }
+        .test-pass { border-left: 4px solid #28a745; }
+        .test-fail { border-left: 4px solid #dc3545; }
+        .log {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📁 Тест загрузки файлов</h1>
+        
+        <div id="status" class="status info">
+            Инициализация...
+        </div>
+        
+        <div>
+            <button onclick="checkAuthStatus()">🔍 Проверить авторизацию</button>
+            <button onclick="testFileManager()" id="test-btn" disabled>📁 Тест FileManager</button>
+            <button onclick="clearLog()">🗑️ Очистить лог</button>
+        </div>
+        
+        <div id="log" class="log">
+            <!-- Логи будут отображены здесь -->
+        </div>
+        
+        <div id="test-results" class="test-results" style="display: none;">
+            <h3>🧪 Результаты тестов</h3>
+            <div id="test-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let authService = null;
+        let drive = null;
+        let fileManager = null;
+        
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                updateStatus('⏳ Инициализация системы...', 'info');
+                log('🚀 Начало инициализации');
+                
+                // Инициализируем глобальный сервис авторизации
+                const initialized = await window.authService.initialize(config);
+                
+                if (initialized) {
+                    log('✅ AuthService инициализирован');
+                    authService = window.authService;
+                    
+                    // Проверяем авторизацию
+                    if (authService.isSignedIn()) {
+                        updateStatus('✅ Пользователь авторизован: ' + authService.getUserName(), 'success');
+                        document.getElementById('test-btn').disabled = false;
+                        log('👤 Авторизован: ' + authService.getUserName());
+                        
+                        // Инициализируем Drive и FileManager
+                        await initDriveAndFileManager();
+                    } else {
+                        updateStatus('⚠️ Пользователь не авторизован. Сначала авторизуйтесь на instructions.html', 'info');
+                        log('⚠️ Требуется авторизация');
+                    }
+                } else {
+                    updateStatus('❌ Ошибка инициализации AuthService', 'error');
+                    log('❌ Ошибка инициализации AuthService');
+                }
+                
+            } catch (error) {
+                updateStatus('❌ Ошибка: ' + error.message, 'error');
+                log('❌ Ошибка инициализации: ' + error.message);
+            }
+        });
+        
+        async function initDriveAndFileManager() {
+            try {
+                log('🔧 Инициализация Google Drive...');
+                drive = new GoogleDrive(config, authService);
+                
+                log('🔧 Инициализация File Manager...');
+                fileManager = new FileManager(authService, drive);
+                
+                // Настройка callbacks
+                fileManager.onFileLoaded = function(data, fileId) {
+                    log('📥 Файл загружен: ' + fileId);
+                    log('📄 Данные файла: ' + JSON.stringify(data).substring(0, 100) + '...');
+                };
+                
+                fileManager.onFilesSelected = function(files) {
+                    log('📁 Выбрано файлов: ' + files.length);
+                };
+                
+                log('✅ Drive и FileManager инициализированы');
+                
+            } catch (error) {
+                log('❌ Ошибка инициализации Drive/FileManager: ' + error.message);
+                throw error;
+            }
+        }
+        
+        function updateStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+        
+        function log(message) {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logEl.innerHTML += `[${timestamp}] ${message}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        function checkAuthStatus() {
+            try {
+                if (!authService) {
+                    log('❌ AuthService не инициализирован');
+                    return;
+                }
+                
+                const authStatus = {
+                    isSignedIn: authService.isSignedIn(),
+                    hasUser: !!authService.getUser(),
+                    hasToken: !!authService.getAccessToken(),
+                    userName: authService.getUserName()
+                };
+                
+                log('🔍 Статус авторизации:');
+                log('  - Авторизован: ' + authStatus.isSignedIn);
+                log('  - Есть пользователь: ' + authStatus.hasUser);
+                log('  - Есть токен: ' + authStatus.hasToken);
+                log('  - Имя пользователя: ' + authStatus.userName);
+                
+                if (authStatus.isSignedIn) {
+                    updateStatus('✅ Авторизован: ' + authStatus.userName, 'success');
+                    document.getElementById('test-btn').disabled = false;
+                } else {
+                    updateStatus('⚠️ Не авторизован', 'info');
+                    document.getElementById('test-btn').disabled = true;
+                }
+                
+            } catch (error) {
+                log('❌ Ошибка проверки авторизации: ' + error.message);
+                updateStatus('❌ Ошибка: ' + error.message, 'error');
+            }
+        }
+        
+        async function testFileManager() {
+            try {
+                if (!fileManager) {
+                    log('❌ FileManager не инициализирован');
+                    return;
+                }
+                
+                log('🧪 Тестирование FileManager...');
+                
+                // Проверяем авторизацию в FileManager
+                const isAuthorized = fileManager.isAuthorized();
+                log('🔍 FileManager.isAuthorized(): ' + isAuthorized);
+                
+                if (!isAuthorized) {
+                    log('❌ FileManager не считает пользователя авторизованным');
+                    return;
+                }
+                
+                // Пытаемся открыть селектор файлов
+                log('📁 Попытка открыть селектор файлов...');
+                await fileManager.showFileSelector();
+                log('✅ Селектор файлов открыт успешно');
+                
+            } catch (error) {
+                log('❌ Ошибка тестирования FileManager: ' + error.message);
+                console.error('Детали ошибки:', error);
+            }
+        }
+    </script>
+</body>
+</html>

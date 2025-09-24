@@ -14,6 +14,28 @@ class FileManager {
         this.onFilesSelected = null;
         this.onFileLoaded = null;
     }
+    
+    /**
+     * Проверка авторизации
+     */
+    isAuthorized() {
+        // Сначала проверяем глобальный AuthService
+        if (window.authService && window.authService.isSignedIn()) {
+            return true;
+        }
+        
+        // Затем проверяем переданный auth (может быть AuthService)
+        if (this.auth && this.auth.isSignedIn && this.auth.isSignedIn()) {
+            return true;
+        }
+        
+        // Проверяем старый формат auth
+        if (this.auth && this.auth.isSignedIn && this.auth.accessToken) {
+            return true;
+        }
+        
+        return false;
+    }
 
     /**
      * Показать модальное окно выбора файлов
@@ -21,6 +43,32 @@ class FileManager {
     async showFileSelector(options = {}) {
         try {
             console.log('📁 Открытие селектора файлов...');
+            
+            // Проверяем авторизацию
+            if (!this.isAuthorized()) {
+                console.error('❌ FileManager: Пользователь не авторизован');
+                throw new Error('Пользователь не авторизован. Необходимо войти в Google.');
+            }
+            
+            // Дополнительная проверка токена
+            let hasValidToken = false;
+            if (window.authService && window.authService.isSignedIn()) {
+                const token = window.authService.getAccessToken();
+                if (token) {
+                    hasValidToken = true;
+                    console.log('✅ FileManager: Токен найден в AuthService');
+                } else {
+                    console.error('❌ FileManager: AuthService.isSignedIn() = true, но токен отсутствует');
+                }
+            } else {
+                console.error('❌ FileManager: AuthService не инициализирован или пользователь не авторизован');
+            }
+            
+            if (!hasValidToken) {
+                throw new Error('Токен доступа отсутствует. Перейдите на страницу инструкций для авторизации.');
+            }
+            
+            console.log('✅ Авторизация подтверждена для FileManager');
             
             // Получаем список файлов
             const result = await this.drive.getFiles({

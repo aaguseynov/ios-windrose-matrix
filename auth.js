@@ -792,14 +792,52 @@ class AuthService {
      * Проверить, авторизован ли пользователь
      */
     isSignedIn() {
-        return this.auth && this.auth.isSignedIn;
+        // Сначала проверяем auth
+        if (this.auth && this.auth.isSignedIn) {
+            return true;
+        }
+        
+        // Если auth не авторизован, проверяем localStorage
+        try {
+            const authStateStr = localStorage.getItem('google_auth_state');
+            if (authStateStr) {
+                const authState = JSON.parse(authStateStr);
+                if (authState.isSignedIn && authState.accessToken) {
+                    console.log('✅ Состояние авторизации восстановлено из localStorage');
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.error('❌ Ошибка чтения состояния из localStorage:', error);
+        }
+        
+        return false;
     }
 
     /**
      * Получить пользователя
      */
     getUser() {
-        return this.auth ? this.auth.user : null;
+        // Сначала пытаемся получить пользователя из auth
+        if (this.auth && this.auth.user) {
+            return this.auth.user;
+        }
+        
+        // Если пользователя нет в auth, проверяем localStorage
+        try {
+            const authStateStr = localStorage.getItem('google_auth_state');
+            if (authStateStr) {
+                const authState = JSON.parse(authStateStr);
+                if (authState.user) {
+                    console.log('✅ Данные пользователя восстановлены из localStorage');
+                    return authState.user;
+                }
+            }
+        } catch (error) {
+            console.error('❌ Ошибка чтения данных пользователя из localStorage:', error);
+        }
+        
+        return null;
     }
 
     /**
@@ -821,7 +859,26 @@ class AuthService {
      * Получить токен доступа
      */
     getAccessToken() {
-        return this.auth ? this.auth.accessToken : null;
+        // Сначала пытаемся получить токен из auth
+        if (this.auth && this.auth.accessToken) {
+            return this.auth.accessToken;
+        }
+        
+        // Если токена нет в auth, проверяем localStorage
+        try {
+            const authStateStr = localStorage.getItem('google_auth_state');
+            if (authStateStr) {
+                const authState = JSON.parse(authStateStr);
+                if (authState.accessToken) {
+                    console.log('✅ Токен восстановлен из localStorage');
+                    return authState.accessToken;
+                }
+            }
+        } catch (error) {
+            console.error('❌ Ошибка чтения токена из localStorage:', error);
+        }
+        
+        return null;
     }
 
     /**

@@ -25,38 +25,47 @@ class GoogleDrive {
      */
     async getAccessToken() {
         try {
-            // Сначала пытаемся получить токен из auth
-            if (this.auth && this.auth.isSignedIn && this.auth.accessToken) {
-                return this.auth.accessToken;
+            console.log('🔍 Поиск токена доступа...');
+            
+            // Сначала пытаемся получить токен из глобального AuthService
+            if (window.authService && window.authService.isSignedIn()) {
+                const token = window.authService.getAccessToken();
+                if (token) {
+                    console.log('✅ Токен получен из глобального AuthService');
+                    return token;
+                } else {
+                    console.log('⚠️ AuthService.isSignedIn() = true, но токен отсутствует');
+                }
+            } else {
+                console.log('⚠️ AuthService не инициализирован или пользователь не авторизован');
             }
             
-            // Если токена нет, пытаемся получить его через Google Identity Services
-            if (window.google && window.google.accounts && this.auth && this.auth.clientId) {
-                console.log('🔄 Получение токена через Google Identity Services...');
-                
-                return new Promise((resolve, reject) => {
-                    const tokenClient = google.accounts.oauth2.initTokenClient({
-                        client_id: this.auth.clientId,
-                        scope: 'https://www.googleapis.com/auth/drive.file',
-                        callback: (response) => {
-                            if (response.access_token) {
-                                console.log('✅ Токен получен через Google Identity Services');
-                                resolve(response.access_token);
-                            } else {
-                                console.error('❌ Токен не получен');
-                                reject(new Error('Не удалось получить токен доступа'));
-                            }
+            // Затем пытаемся получить токен из переданного auth (может быть AuthService)
+            if (this.auth) {
+                if (this.auth.isSignedIn && typeof this.auth.isSignedIn === 'function') {
+                    // Это AuthService
+                    if (this.auth.isSignedIn()) {
+                        const token = this.auth.getAccessToken();
+                        if (token) {
+                            console.log('✅ Токен получен из переданного AuthService');
+                            return token;
                         }
-                    });
-                    
-                    tokenClient.requestAccessToken();
-                });
+                    }
+                } else if (this.auth.accessToken) {
+                    // Это старый формат auth
+                    console.log('✅ Токен получен из переданного auth (старый формат)');
+                    return this.auth.accessToken;
+                }
             }
             
-            throw new Error('Пользователь не авторизован');
+            // НЕ пытаемся получить новый токен через Google Identity Services
+            // Это должно вызывать только окно авторизации
+            console.error('❌ Токен доступа не найден. Пользователь должен авторизоваться через instructions.html');
+            throw new Error('Пользователь не авторизован. Перейдите на страницу инструкций для авторизации.');
+            
         } catch (error) {
             console.error('❌ Ошибка получения токена:', error);
-            throw new Error('Пользователь не авторизован');
+            throw error;
         }
     }
 

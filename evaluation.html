@@ -1213,7 +1213,15 @@
                     return;
                 }
                 
-                console.log('✅ Авторизация подтверждена для загрузки файлов');
+                // Дополнительная проверка токена
+                if (!authStatus.token) {
+                    console.error('❌ Токен доступа отсутствует');
+                    showNotification('Токен доступа отсутствует. Перейдите на страницу инструкций для авторизации.', 'error');
+                    window.location.href = 'instructions.html';
+                    return;
+                }
+                
+                console.log('✅ Авторизация и токен подтверждены для загрузки файлов');
 
                 if (!fileManager) {
                     showNotification('Система файлов не инициализирована', 'error');
@@ -1241,7 +1249,15 @@
                     return;
                 }
                 
-                console.log('✅ Авторизация подтверждена для сохранения файлов');
+                // Дополнительная проверка токена
+                if (!authStatus.token) {
+                    console.error('❌ Токен доступа отсутствует');
+                    showNotification('Токен доступа отсутствует. Перейдите на страницу инструкций для авторизации.', 'error');
+                    window.location.href = 'instructions.html';
+                    return;
+                }
+                
+                console.log('✅ Авторизация и токен подтверждены для сохранения файлов');
 
                 const developerSelect = document.getElementById('developer-profile');
                 if (!developerSelect.value) {
@@ -1504,8 +1520,8 @@
                 
                 console.log('🔧 Инициализация Google Drive...');
                 
-                // Инициализируем Google Drive
-                drive = new GoogleDrive(config, auth);
+                // Инициализируем Google Drive с глобальным AuthService
+                drive = new GoogleDrive(config, window.authService);
                 
                 // Настройка callbacks для Google Drive
                 drive.onError = function(message) {
@@ -1514,8 +1530,8 @@
                 
                 console.log('🔧 Инициализация File Manager...');
                 
-                // Инициализируем File Manager
-                fileManager = new FileManager(auth, drive);
+                // Инициализируем File Manager с глобальным AuthService
+                fileManager = new FileManager(window.authService, drive);
                 
                 // Настройка callbacks для File Manager
                 fileManager.onFileLoaded = function(data, fileId) {
