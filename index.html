@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>iOS Windrose Матрица Компетенций</title>
+    <script src="https://aaguseynov.github.io/ios-windrose-matrix/env-vars.js"></script>
+    <script src="config.js"></script>
+    <script src="new-auth.js"></script>
+    <script src="data-manager.js"></script>
+    <script src="ui-manager.js"></script>
+    <script src="drive.js"></script>
+    <script src="file-manager.js"></script>
     <style>
         * {
             margin: 0;
@@ -12,106 +19,601 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
 
         .container {
-            text-align: center;
-            color: white;
             max-width: 600px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
             padding: 40px;
+            text-align: center;
         }
 
-        .logo {
-            font-size: 4rem;
-            margin-bottom: 20px;
-        }
-
-        h1 {
+        .header h1 {
             font-size: 2.5rem;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
-        p {
+        .header p {
             font-size: 1.2rem;
-            margin-bottom: 30px;
             opacity: 0.9;
         }
 
-        .start-button {
-            background: white;
-            color: #3182ce;
-            border: none;
-            padding: 15px 40px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            border-radius: 50px;
+        .content {
+            padding: 40px;
+        }
+
+        .role-selection {
+            text-align: center;
+        }
+
+        .role-option {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            text-decoration: none;
-            display: inline-block;
+            position: relative;
+        }
+        
+        .role-option::before {
+            content: '👆 Кликните для выбора';
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 12px;
+            color: #666;
+            opacity: 0.7;
+        }
+
+        .role-option:hover {
+            border-color: #3182ce;
+            background: #ebf8ff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .role-option.selected {
+            border-color: #3182ce;
+            background: #ebf8ff;
+            box-shadow: 0 8px 25px rgba(49, 130, 206, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .role-option.selected::before {
+            content: '✅ Выбрано';
+            color: #3182ce;
+            font-weight: bold;
+            opacity: 1;
+        }
+
+        .role-option h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #2d3748;
+        }
+
+        .role-option p {
+            color: #4a5568;
+            line-height: 1.6;
+        }
+
+        .start-button {
+            background: linear-gradient(135deg, #3182ce, #2b6cb0);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(49, 130, 206, 0.3);
         }
 
         .start-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 25px rgba(49, 130, 206, 0.4);
         }
 
-        .features {
-            margin-top: 40px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+        .start-button:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
-        .feature {
-            background: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
+        .auth-status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #4a5568;
         }
 
-        .feature h3 {
-            margin-bottom: 10px;
-            font-size: 1.1rem;
+        .auth-status.success {
+            color: #38a169;
         }
 
-        .feature p {
-            font-size: 0.9rem;
-            margin: 0;
-            opacity: 0.8;
+        .auth-status.error {
+            color: #e53e3e;
+        }
+        
+        .auth-status.warning {
+            color: #d69e2e;
+        }
+
+        .instructions-link {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .instructions-link a {
+            color: #3182ce;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .instructions-link a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">🌹</div>
-        <h1>iOS Windrose Матрица</h1>
-        <p>Интерактивная система оценки и развития компетенций iOS разработчиков</p>
-        
-        <a href="instructions.html" class="start-button">Начать работу с системой</a>
-        
-        <div class="features">
-            <div class="feature">
-                <h3>📊 Комплексная оценка</h3>
-                <p>Технические и продуктовые компетенции</p>
-            </div>
-            <div class="feature">
-                <h3>🎯 Интерактивная диаграмма</h3>
-                <p>Windrose диаграмма в реальном времени</p>
-            </div>
-            <div class="feature">
-                <h3>💾 Сохранение данных</h3>
-                <p>Экспорт результатов в JSON</p>
+        <div class="header">
+            <h1>🎯 iOS Windrose</h1>
+            <p>Матрица Компетенций</p>
+        </div>
+
+        <div class="content">
+            <div class="role-selection">
+                <h2 style="margin-bottom: 30px; color: #2d3748;">Выберите тип оценки</h2>
+                
+                <div class="role-option" data-role="self">
+                    <h3>👤 Оцениваю себя</h3>
+                    <p>Самооценка компетенций. Заполните колонку "Самооценка" и сохраните как черновик для дальнейшей работы с менеджером.</p>
+                </div>
+
+                <div class="role-option" data-role="colleague">
+                    <h3>👨‍💼 Оцениваю коллегу</h3>
+                    <p>Оценка компетенций коллеги. Заполните колонку "Оценка менеджера" и завершите оценку с сохранением диаграммы.</p>
+                </div>
+
+                <button id="start-evaluation-btn" class="start-button" disabled>
+                    🔐 Авторизоваться и начать оценку
+                </button>
+
+                <div id="auth-status" class="auth-status"></div>
+
+                <div class="instructions-link">
+                    <a href="instructions.html">📖 Подробные инструкции</a>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Скрытый контейнер для кнопки Google авторизации -->
+    <div id="google-signin-container" style="display: none; position: fixed; top: 0; left: 0; z-index: 9999;"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Инициализация главной страницы...');
+            
+            // Проверяем загрузку скриптов
+            console.log('Проверка скриптов:', {
+                initGlobalAuth: typeof initGlobalAuth,
+                windowAuthService: !!window.authService,
+                config: typeof config
+            });
+            
+            // Проверяем наличие контейнера для Google авторизации
+            const googleSigninContainer = document.getElementById('google-signin-container');
+            console.log('🔍 Проверка контейнера Google авторизации:');
+            console.log('  - Найден:', !!googleSigninContainer);
+            console.log('  - Элемент:', googleSigninContainer);
+            
+            if (googleSigninContainer) {
+                console.log('✅ Контейнер найден:', googleSigninContainer);
+                console.log('  - ID:', googleSigninContainer.id);
+                console.log('  - Display:', googleSigninContainer.style.display);
+                console.log('  - Parent:', googleSigninContainer.parentElement);
+                console.log('  - В DOM:', document.body.contains(googleSigninContainer));
+                
+                // Проверяем, что элемент действительно доступен
+                try {
+                    googleSigninContainer.style.display = 'block';
+                    console.log('✅ Контейнер доступен для изменения');
+                    googleSigninContainer.style.display = 'none';
+                } catch (error) {
+                    console.error('❌ Ошибка доступа к контейнеру:', error);
+                }
+            } else {
+                console.error('❌ Контейнер google-signin-container НЕ НАЙДЕН!');
+                console.log('Все элементы с ID:', Array.from(document.querySelectorAll('[id]')).map(el => el.id));
+                
+                // Попробуем создать контейнер программно
+                console.log('🔧 Попытка создать контейнер программно...');
+                const newContainer = document.createElement('div');
+                newContainer.id = 'google-signin-container';
+                newContainer.style.cssText = 'display: none; position: fixed; top: 0; left: 0; z-index: 9999;';
+                document.body.appendChild(newContainer);
+                console.log('✅ Контейнер создан программно:', newContainer);
+            }
+            
+            // Проверяем наличие элементов
+            const roleOptions = document.querySelectorAll('.role-option');
+            const startBtn = document.getElementById('start-evaluation-btn');
+            const authStatus = document.getElementById('auth-status');
+            
+            console.log('Элементы найдены:', {
+                roleOptions: roleOptions.length,
+                startBtn: !!startBtn,
+                authStatus: !!authStatus
+            });
+            
+            let selectedRole = null;
+
+            console.log('Найдено опций роли:', roleOptions.length);
+            
+            // Проверяем, что элементы действительно найдены
+            if (roleOptions.length === 0) {
+                console.error('❌ НЕ НАЙДЕНЫ ЭЛЕМЕНТЫ .role-option!');
+                return;
+            }
+            
+            roleOptions.forEach((option, index) => {
+                console.log(`Обработчик для опции ${index}:`, option.dataset.role);
+                console.log('Элемент:', option);
+                
+                // Добавляем простую проверку клика
+                option.addEventListener('click', function(event) {
+                    console.log('🔥 КЛИК ОБНАРУЖЕН!', this.dataset.role);
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    // Убираем выделение с других опций
+                    roleOptions.forEach(opt => {
+                        opt.classList.remove('selected');
+                        console.log('Убран класс selected с:', opt.dataset.role);
+                    });
+                    
+                    // Выделяем выбранную опцию
+                    this.classList.add('selected');
+                    selectedRole = this.dataset.role;
+                    
+                    console.log('✅ Выбрана роль:', selectedRole);
+                    console.log('✅ Класс selected добавлен:', this.classList.contains('selected'));
+                    
+                    // Обновляем состояние кнопки
+                    updateStartButton();
+                });
+                
+                // Добавляем также обработчик mousedown для дополнительной проверки
+                option.addEventListener('mousedown', function() {
+                    console.log('🖱️ mousedown на:', this.dataset.role);
+                });
+                
+                // Добавляем простую проверку touch для мобильных устройств
+                option.addEventListener('touchstart', function() {
+                    console.log('📱 touchstart на:', this.dataset.role);
+                });
+            });
+            
+            // Дополнительная проверка - попробуем привязать обработчик через onclick
+            roleOptions.forEach((option, index) => {
+                option.onclick = function() {
+                    console.log('🖱️ onclick сработал для:', this.dataset.role);
+                };
+            });
+
+            function updateStartButton() {
+                console.log('🔧 updateStartButton вызвана:');
+                console.log('  - selectedRole:', selectedRole);
+                console.log('  - window.authService:', !!window.authService);
+                
+                // Проверяем авторизацию несколькими способами
+                const isSignedIn = window.authService?.isSignedIn();
+                const hasUser = window.authService?.getUser();
+                const hasToken = window.authService?.getAccessToken();
+                const isAuthorized = isSignedIn || hasUser || hasToken;
+                
+                console.log('  - isSignedIn():', isSignedIn);
+                console.log('  - hasUser():', !!hasUser);
+                console.log('  - hasToken():', !!hasToken);
+                console.log('  - isAuthorized:', isAuthorized);
+                console.log('  - startBtn.disabled до:', startBtn.disabled);
+                
+                if (selectedRole && isAuthorized) {
+                    startBtn.disabled = false;
+                    startBtn.textContent = '🚀 Начать оценку';
+                    console.log('✅ Кнопка: Начать оценку (авторизован)');
+                    console.log('  - startBtn.disabled после:', startBtn.disabled);
+                } else if (selectedRole) {
+                    startBtn.disabled = false;
+                    startBtn.textContent = '🔐 Авторизоваться и начать оценку';
+                    console.log('✅ Кнопка: Авторизоваться и начать оценку');
+                    console.log('  - startBtn.disabled после:', startBtn.disabled);
+                } else {
+                    startBtn.disabled = true;
+                    startBtn.textContent = '🔐 Авторизоваться и начать оценку';
+                    console.log('❌ Кнопка: отключена (нет выбранной роли)');
+                    console.log('  - startBtn.disabled после:', startBtn.disabled);
+                }
+            }
+
+            // Обработчик кнопки "Начать оценку"
+            startBtn.addEventListener('click', async function() {
+                console.log('🖱️ КЛИК ПО КНОПКЕ "Начать оценку"!');
+                console.log('🖱️ ОБРАБОТЧИК КНОПКИ СРАБОТАЛ!');
+                console.log('🔍 Диагностика состояния:');
+                console.log('  - selectedRole:', selectedRole);
+                console.log('  - window.authService:', !!window.authService);
+                console.log('  - isSignedIn():', window.authService?.isSignedIn());
+                console.log('  - getUser():', window.authService?.getUser());
+                
+                if (!selectedRole) {
+                    console.error('❌ Нет выбранной роли!');
+                    authStatus.textContent = '❌ Сначала выберите тип оценки';
+                    authStatus.className = 'auth-status error';
+                    return;
+                }
+
+                console.log('🔐 Запрос авторизации для роли:', selectedRole);
+                
+                // Если пользователь уже авторизован, сразу переходим к оценке
+                // Проверяем несколькими способами
+                const isSignedIn = window.authService?.isSignedIn();
+                const hasUser = window.authService?.getUser();
+                const hasToken = window.authService?.getAccessToken();
+                const isAuthorized = isSignedIn || hasUser || hasToken;
+                
+                console.log('🔍 Детальная проверка авторизации в обработчике кнопки:');
+                console.log('  - isSignedIn():', isSignedIn);
+                console.log('  - hasUser():', !!hasUser);
+                console.log('  - hasToken():', !!hasToken);
+                console.log('  - isAuthorized:', isAuthorized);
+                console.log('  - window.authService:', !!window.authService);
+                
+                if (isAuthorized) {
+                    console.log('✅ Пользователь уже авторизован, переходим к оценке');
+                    authStatus.textContent = '✅ Переходим к оценке...';
+                    authStatus.className = 'auth-status success';
+                    
+                    // Сохраняем выбранную роль в localStorage
+                    localStorage.setItem('evaluationRole', selectedRole);
+                    console.log('💾 Роль сохранена в localStorage:', selectedRole);
+                    
+                    // Переходим к странице оценки сразу
+                    console.log('🚀 Переходим на evaluation.html...');
+                    window.location.href = 'evaluation.html';
+                    return;
+                } else {
+                    console.log('❌ Пользователь НЕ авторизован, продолжаем с авторизацией');
+                }
+                
+                // Дополнительная проверка контейнера перед авторизацией
+                const googleSigninContainer = document.getElementById('google-signin-container');
+                console.log('🔍 Проверка контейнера перед авторизацией:', !!googleSigninContainer);
+                if (!googleSigninContainer) {
+                    console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: Контейнер google-signin-container не найден перед авторизацией!');
+                    authStatus.textContent = '❌ Ошибка: контейнер авторизации не найден';
+                    authStatus.className = 'auth-status error';
+                    return;
+                }
+                
+                // Проверяем наличие сервиса авторизации
+                if (!window.authService) {
+                    console.warn('⚠️ Сервис авторизации не найден');
+                    authStatus.textContent = '❌ Ошибка: сервис авторизации недоступен';
+                    authStatus.className = 'auth-status error';
+                    return;
+                }
+                
+                if (!window.authService.isInitialized) {
+                    authStatus.textContent = '❌ Ошибка инициализации авторизации';
+                    authStatus.className = 'auth-status error';
+                    return;
+                }
+                
+                try {
+                    console.log('🔐 Начинаем процесс авторизации...');
+                    
+                    // Дополнительная проверка контейнера перед авторизацией
+                    const googleSigninContainer = document.getElementById('google-signin-container');
+                    console.log('🔍 Финальная проверка контейнера:', !!googleSigninContainer);
+                    
+                    if (!googleSigninContainer) {
+                        throw new Error('Контейнер авторизации не найден');
+                    }
+                    
+                    const success = await window.authService.signIn();
+                    if (success) {
+                        authStatus.textContent = '✅ Авторизация успешна! Переходим к оценке...';
+                        authStatus.className = 'auth-status success';
+                        
+                        // Сохраняем выбранную роль в localStorage
+                        localStorage.setItem('evaluationRole', selectedRole);
+                        
+                        // Переходим к странице оценки сразу
+                        window.location.href = 'evaluation.html';
+                    } else {
+                        authStatus.textContent = '❌ Авторизация не удалась';
+                        authStatus.className = 'auth-status error';
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка авторизации:', error);
+                    console.error('Тип ошибки:', error.name);
+                    console.error('Сообщение:', error.message);
+                    
+                    // Специальная обработка AbortError
+                    if (error.name === 'AbortError' || error.message.includes('aborted')) {
+                        authStatus.textContent = '⚠️ Авторизация прервана. Попробуйте еще раз.';
+                        authStatus.className = 'auth-status warning';
+                        console.log('🔄 AbortError обнаружен, предлагаем повторить попытку');
+                    } else {
+                        authStatus.textContent = '❌ Ошибка авторизации: ' + error.message;
+                        authStatus.className = 'auth-status error';
+                    }
+                }
+            });
+
+
+            // Инициализируем авторизацию в отдельном блоке
+            async function initAuth() {
+                try {
+                    console.log('🔧 Инициализация глобального AuthService...');
+                    
+                    // Проверяем состояние Google Identity Services
+                    console.log('🔍 Проверка Google Identity Services:');
+                    console.log('  - window.google:', !!window.google);
+                    console.log('  - window.google.accounts:', !!window.google?.accounts);
+                    console.log('  - window.google.accounts.id:', !!window.google?.accounts?.id);
+                    
+                    // Инициализируем глобальный сервис
+                    const initialized = await window.authService.initialize(config);
+                    
+                    if (initialized) {
+                        console.log('✅ Глобальный AuthService готов к работе');
+                        authStatus.textContent = 'Система готова к авторизации';
+                        authStatus.className = 'auth-status';
+                        
+                        // Проверяем, авторизован ли пользователь
+                        if (window.authService.isSignedIn()) {
+                            const userName = window.authService.getUserName();
+                            authStatus.textContent = '✅ Уже авторизован: ' + userName;
+                            authStatus.className = 'auth-status success';
+                            updateStartButton();
+                        }
+                    } else {
+                        console.error('❌ Не удалось инициализировать глобальный AuthService');
+                        authStatus.textContent = '❌ Ошибка инициализации Google API';
+                        authStatus.className = 'auth-status error';
+                    }
+                    
+                    // Подписываемся на события авторизации
+                    window.authService.onAuthSuccess(function(user) {
+                        console.log('✅ Авторизация успешна:', user);
+                        const userName = window.authService.getUserName();
+                        
+                        // Дополнительная проверка состояния
+                        setTimeout(() => {
+                            const isStillSignedIn = window.authService.isSignedIn();
+                            console.log('🔍 Проверка состояния через 1 сек:', {
+                                isSignedIn: isStillSignedIn,
+                                hasUser: !!window.authService.getUser(),
+                                hasToken: !!window.authService.getAccessToken()
+                            });
+                            
+                            if (isStillSignedIn) {
+                                authStatus.textContent = '✅ Авторизован: ' + userName;
+                                authStatus.className = 'auth-status success';
+                                updateStartButton(); // Обновляем кнопки после успешной авторизации
+                            } else {
+                                authStatus.textContent = '❌ Ошибка: состояние авторизации потеряно';
+                                authStatus.className = 'auth-status error';
+                                updateStartButton(); // Обновляем кнопки даже при ошибке
+                            }
+                        }, 1000);
+                    });
+                    
+                    window.authService.onAuthError(function(message) {
+                        console.error('❌ Ошибка авторизации:', message);
+                        authStatus.textContent = 'Ошибка авторизации: ' + message;
+                        authStatus.className = 'auth-status error';
+                        updateStartButton(); // Обновляем кнопки при ошибке авторизации
+                    });
+                    
+                } catch (error) {
+                    console.error('❌ Критическая ошибка инициализации:', error);
+                    authStatus.textContent = '❌ Критическая ошибка: ' + error.message;
+                    authStatus.className = 'auth-status error';
+                }
+            }
+            
+            // Запускаем инициализацию авторизации
+            initAuth();
+            
+            // Диагностика привязки обработчиков
+            console.log('🔧 Диагностика привязки обработчиков:');
+            console.log('  - startBtn:', !!startBtn);
+            console.log('  - startBtn.onclick:', !!startBtn?.onclick);
+            console.log('  - startBtn.addEventListener установлен:', 'Да');
+            
+            // Дополнительный обработчик через onclick
+            if (startBtn) {
+                startBtn.onclick = function() {
+                    console.log('🖱️ ONCLICK ОБРАБОТЧИК СРАБОТАЛ!');
+                    console.log('🖱️ Это дополнительный обработчик через onclick');
+                };
+                console.log('✅ Дополнительный onclick обработчик добавлен');
+            }
+            
+            // Тестовая проверка клика
+            console.log('🧪 Тестовая проверка - можно ли кликнуть по кнопке:');
+            console.log('  - startBtn.disabled:', startBtn?.disabled);
+            console.log('  - startBtn.style.pointerEvents:', startBtn?.style.pointerEvents);
+            console.log('  - startBtn.offsetParent:', !!startBtn?.offsetParent);
+            
+            // Функция показа уведомлений
+            function showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    color: white;
+                    font-weight: 600;
+                    z-index: 10001;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    transform: translateX(100%);
+                    transition: transform 0.3s ease;
+                    max-width: 400px;
+                `;
+
+                const colors = {
+                    success: 'linear-gradient(135deg, #48bb78, #38a169)',
+                    error: 'linear-gradient(135deg, #f56565, #e53e3e)',
+                    warning: 'linear-gradient(135deg, #ed8936, #dd6b20)',
+                    info: 'linear-gradient(135deg, #4299e1, #3182ce)'
+                };
+
+                notification.style.background = colors[type] || colors.info;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(0)';
+                }, 100);
+
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }, 4000);
+            }
+        });
+    </script>
 </body>
 </html>

@@ -14,6 +14,13 @@ class GoogleDrive {
         this.folderUrl = config.folderUrl;
         this.filePrefix = config.filePrefix || 'evaluation';
         
+        // Отладочная информация
+        console.log('🔧 GoogleDrive инициализирован:', {
+            folderId: this.folderId,
+            folderUrl: this.folderUrl,
+            filePrefix: this.filePrefix
+        });
+        
         // Callbacks
         this.onFilesLoaded = null;
         this.onFileUploaded = null;
@@ -126,7 +133,7 @@ class GoogleDrive {
             // Параметры запроса
             const params = new URLSearchParams({
                 pageSize: options.pageSize || 100,
-                fields: 'files(id,name,mimeType,createdTime,modifiedTime,size,iconLink)',
+                fields: 'files(id,name,mimeType,createdTime,modifiedTime,size,iconLink,trashed,owners,shared,parents,permissions,capabilities,lastModifyingUser,webViewLink,description)',
                 orderBy: 'modifiedTime desc'
             });
 
@@ -141,8 +148,14 @@ class GoogleDrive {
                 const query = `'${this.folderId}' in parents`;
                 params.append('q', query);
                 console.log('📁 Поиск в папке:', query);
+                console.log('🔧 folderId:', this.folderId);
             } else {
-                console.log('🌐 Поиск во всем Drive (folderOnly = false или folderId отсутствует)');
+                console.log('🌐 Поиск во всем Drive');
+                console.log('🔧 Причина:', {
+                    hasFolderId: !!this.folderId,
+                    folderOnly: options.folderOnly,
+                    folderId: this.folderId
+                });
             }
 
             // Если указан тип файлов
@@ -150,8 +163,42 @@ class GoogleDrive {
                 const q = params.get('q') || '';
                 params.set('q', q ? `${q} and mimeType='${options.mimeType}'` : `mimeType='${options.mimeType}'`);
             }
+            
+            // Включаем общие файлы (если указано)
+            if (options.includeShared) {
+                const q = params.get('q') || '';
+                const sharedFilter = 'sharedWithMe=true';
+                params.set('q', q ? `${q} and ${sharedFilter}` : sharedFilter);
+                console.log('🔍 Включаем общие файлы:', sharedFilter);
+            }
+            
+            // Фильтруем файлы оценок по имени (если указан префикс)
+            if (this.filePrefix && options.filterByPrefix !== false) {
+                const q = params.get('q') || '';
+                const nameFilter = `name contains '${this.filePrefix}'`;
+                params.set('q', q ? `${q} and ${nameFilter}` : nameFilter);
+                console.log('🔍 Фильтр по имени файла:', nameFilter);
+            }
+            
+            // Поиск по имени файла (если указан)
+            if (options.searchByName) {
+                const q = params.get('q') || '';
+                const nameSearch = `name contains '${options.searchByName}'`;
+                params.set('q', q ? `${q} and ${nameSearch}` : nameSearch);
+                console.log('🔍 Поиск по имени файла:', nameSearch);
+            }
+            
+            // Исключаем удаленные файлы (файлы в корзине)
+            const currentQ = params.get('q') || '';
+            const excludeTrashed = 'trashed=false';
+            params.set('q', currentQ ? `${currentQ} and ${excludeTrashed}` : excludeTrashed);
+            console.log('🗑️ Исключаем удаленные файлы:', excludeTrashed);
 
-            const response = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`, {
+            const finalUrl = `https://www.googleapis.com/drive/v3/files?${params}`;
+            console.log('🌐 Финальный запрос к API:', finalUrl);
+            console.log('📋 Параметры запроса:', params.toString());
+            
+            const response = await fetch(finalUrl, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
@@ -165,6 +212,25 @@ class GoogleDrive {
 
             const data = await response.json();
             console.log(`✅ Найдено файлов: ${data.files.length}`);
+            
+            // Дополнительная фильтрация: исключаем удаленные файлы на уровне JavaScript
+            const activeFiles = data.files.filter(file => !file.trashed);
+            console.log(`🗑️ После исключения удаленных файлов: ${activeFiles.length} активных файлов`);
+            
+            // Если есть удаленные файлы, показываем информацию о них
+            if (activeFiles.length < data.files.length) {
+                const trashedCount = data.files.length - activeFiles.length;
+                console.log(`⚠️ Найдено ${trashedCount} удаленных файлов, исключены из результатов`);
+                
+                // Показываем информацию об удаленных файлах
+                const trashedFiles = data.files.filter(file => file.trashed);
+                trashedFiles.forEach(file => {
+                    console.log(`  🗑️ Удаленный файл: ${file.name} (ID: ${file.id})`);
+                });
+            }
+            
+            // Заменяем список файлов на активные
+            data.files = activeFiles;
             
             this.hideLoadingIndicator();
             
@@ -189,7 +255,32 @@ class GoogleDrive {
             console.log('📤 Загрузка файла:', filename);
             this.showLoadingIndicator('Сохранение файла...');
 
+            // Проверяем размер файла перед загрузкой
+            const fileSize = new Blob([fileContent]).size;
+            const maxSize = config.drive.maxFileSize;
+            
+            console.log(`📊 Размер файла: ${this.formatFileSize(fileSize)}, Максимум: ${this.formatFileSize(maxSize)}`);
+            
+            if (fileSize > maxSize) {
+                throw new Error(`Файл слишком большой: ${this.formatFileSize(fileSize)}. Максимальный размер: ${this.formatFileSize(maxSize)}`);
+            }
+
             const accessToken = await this.getAccessToken();
+            
+            // Проверяем, существует ли файл с таким же именем, и удаляем его
+            try {
+                const existingFiles = await this.getFiles({ name: filename });
+                if (existingFiles.success && existingFiles.files.length > 0) {
+                    console.log('🔄 Найден существующий файл, удаляем его перед загрузкой нового:', filename);
+                    for (const file of existingFiles.files) {
+                        await this.deleteFile(file.id);
+                        console.log('🗑️ Удален существующий файл:', file.id);
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ Ошибка при проверке существующих файлов:', error.message);
+                // Продолжаем загрузку даже если не удалось проверить существующие файлы
+            }
             
             // Создаем метаданные файла
             const metadata = {
@@ -197,10 +288,26 @@ class GoogleDrive {
                 parents: options.parents || (this.folderId ? [this.folderId] : [])
             };
 
+            // Определяем тип контента
+            const contentType = options.contentType || 'application/json';
+            
             // Создаем FormData для multipart upload
             const form = new FormData();
             form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-            form.append('file', new Blob([fileContent], { type: 'application/json' }));
+            
+            // Для изображений используем base64, для JSON - обычный текст
+            if (contentType.startsWith('image/')) {
+                // Для изображений конвертируем base64 в blob
+                const byteCharacters = atob(fileContent);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                form.append('file', new Blob([byteArray], { type: contentType }));
+            } else {
+                form.append('file', new Blob([fileContent], { type: contentType }));
+            }
 
             const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
                 method: 'POST',
@@ -425,6 +532,69 @@ class GoogleDrive {
         if (this.onError) {
             this.onError(message);
         }
+    }
+
+    /**
+     * Получение файлов напрямую из папки
+     */
+    async getFilesFromFolder() {
+        try {
+            console.log('📁 Прямой поиск в папке:', this.folderId);
+            
+            if (!this.folderId) {
+                return { success: false, error: 'ID папки не указан' };
+            }
+
+            const accessToken = await this.getAccessToken();
+            
+            const params = new URLSearchParams({
+                q: `'${this.folderId}' in parents and trashed=false`,
+                fields: 'files(id,name,mimeType,createdTime,modifiedTime,size,iconLink,trashed,owners,shared,parents,permissions,capabilities,lastModifyingUser,webViewLink,description)',
+                orderBy: 'modifiedTime desc',
+                pageSize: 100
+            });
+
+            const url = `https://www.googleapis.com/drive/v3/files?${params}`;
+            console.log('🌐 Прямой запрос к папке:', url);
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Ошибка получения файлов из папки: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log(`📁 Найдено файлов в папке: ${data.files.length}`);
+
+            return {
+                success: true,
+                files: data.files,
+                totalFiles: data.files.length
+            };
+
+        } catch (error) {
+            console.error('❌ Ошибка получения файлов из папки:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Форматирование размера файла
+     */
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
     /**

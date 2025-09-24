@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>iOS Windrose Матрица Компетенций</title>
-                <script src="https://aaguseynov.github.io/ios-windrose-matrix/env-vars.js"></script>
-    <script src="config.js"></script>
-    <script src="new-auth.js"></script>
     <style>
         * {
             margin: 0;
@@ -282,17 +279,30 @@
 
             <div class="section">
                 <h2>📋 Как проводить оценку</h2>
+                
+                <h3>👤 Самооценка</h3>
                 <ol>
-                    <li><strong>Выберите профиль разработчика</strong> из выпадающего списка</li>
+                    <li><strong>Выберите "Оцениваю себя"</strong> на главной странице</li>
+                    <li><strong>Выберите свой профиль</strong> из выпадающего списка</li>
                     <li><strong>Заполните колонку "Самооценка"</strong> - оценки от 0 до 3.0 (шаг 0.5)</li>
                     <li><strong>Добавьте комментарии</strong> в колонку "Комментарии" для обоснования оценок</li>
                     <li><strong>Наблюдайте Windrose диаграмму</strong> - она обновляется в реальном времени</li>
-                    <li><strong>Сохраните результаты</strong> кнопкой "📤 Сохранить на Google Диск"</li>
+                    <li><strong>Сохраните как черновик</strong> кнопкой "💾 Сохранить драфт"</li>
+                </ol>
+                
+                <h3>👨‍💼 Оценка коллеги</h3>
+                <ol>
+                    <li><strong>Выберите "Оцениваю коллегу"</strong> на главной странице</li>
+                    <li><strong>Выберите профиль оцениваемого разработчика</strong> из выпадающего списка</li>
+                    <li><strong>Заполните колонку "Оценка менеджера"</strong> - оценки от 0 до 3.0 (шаг 0.5)</li>
+                    <li><strong>Добавьте комментарии</strong> в колонку "Комментарии" для обоснования оценок</li>
+                    <li><strong>Наблюдайте Windrose диаграмму</strong> - она обновляется в реальном времени</li>
+                    <li><strong>Завершите оценку</strong> кнопкой "✅ Завершить оценку" (сохранит файл + диаграмму)</li>
                 </ol>
                 
                 <div class="highlight">
                     <h4>💾 Важно! Хранение данных</h4>
-                    <p>Все оценки хранятся в Google Диске. Для дальнейшей работы не забудьте их экспортировать или сохранить! Используйте кнопки "📥 Загрузить из Google Диска" и "📤 Сохранить на Google Диск" для синхронизации данных.</p>
+                    <p>Все оценки хранятся в Google Диске. <strong>Разработчики могут только сохранять черновики</strong>, а <strong>менеджеры завершают оценки</strong> с автоматическим сохранением диаграммы.</p>
                 </div>
             </div>
 
@@ -311,19 +321,28 @@
                 <h2>☁️ Работа с Google Диском</h2>
                 <p>Система использует Google Диск для хранения и синхронизации оценок между участниками команды.</p>
                 
-                <h3>📤 Сохранение оценок</h3>
+                <h3>💾 Сохранение черновиков (для разработчиков)</h3>
                 <ol>
-                    <li>Заполните матрицу компетенций</li>
-                    <li>Нажмите кнопку <strong>"📤 Сохранить на Google Диск"</strong></li>
-                    <li>Следуйте инструкции для загрузки файла в общую папку</li>
-                    <li>Файл будет доступен всем участникам команды</li>
+                    <li>Заполните колонку "Самооценка"</li>
+                    <li>Нажмите кнопку <strong>"💾 Сохранить драфт"</strong></li>
+                    <li>Файл сохранится в формате <code>prefix_developer_date.json</code></li>
+                    <li>Статус файла: <code>"draft"</code> - черновик для дальнейшей работы</li>
+                </ol>
+                
+                <h3>✅ Завершение оценок (для менеджеров)</h3>
+                <ol>
+                    <li>Заполните колонку "Оценка менеджера"</li>
+                    <li>Нажмите кнопку <strong>"✅ Завершить оценку"</strong></li>
+                    <li>Файл сохранится в формате <code>prefix_developer_date.json</code></li>
+                    <li>Статус файла: <code>"completed"</code> - завершенная оценка</li>
+                    <li><strong>Автоматически сохраняется диаграмма</strong> как PNG файл <code>prefix_developer_chart_date.png</code></li>
                 </ol>
                 
                 <h3>📥 Загрузка оценок</h3>
                 <ol>
                     <li>Нажмите кнопку <strong>"📥 Загрузить из Google Диска"</strong></li>
-                    <li>Следуйте инструкции для скачивания файла из общей папки</li>
-                    <li>Импортируйте файл в систему</li>
+                    <li>Выберите файл из списка (можно предварительно просмотреть)</li>
+                    <li>Нажмите "📥 Загрузить" для импорта данных</li>
                     <li>Продолжите работу с загруженными данными</li>
                 </ol>
                 
@@ -363,175 +382,18 @@
 
             <div class="start-section">
                 <h2>🚀 Готовы начать оценку?</h2>
-                <p>Для начала работы необходимо авторизоваться в Google Drive для сохранения и загрузки файлов оценок.</p>
+                <p>Для начала работы выберите тип оценки на главной странице и авторизуйтесь в Google Drive.</p>
                 <br>
-                <button id="start-evaluation-btn" class="start-button">🔐 Авторизоваться и начать оценку</button>
-                <div id="auth-status" style="margin-top: 15px; font-size: 14px; color: #4a5568;"></div>
+                <a href="index.html" class="start-button" style="display: inline-block; text-decoration: none; color: white;">🏠 Перейти на главную страницу</a>
             </div>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Инициализация страницы инструкций...');
-            
-            // Инициализируем глобальный сервис авторизации
-            initGlobalAuth();
-            
-            // Обработчик кнопки "Начать оценку"
-            const startBtn = document.getElementById('start-evaluation-btn');
-            const authStatus = document.getElementById('auth-status');
-            
-            startBtn.addEventListener('click', async function() {
-                console.log('🔐 Запрос авторизации...');
-                
-                if (!window.authService || !window.authService.isInitialized) {
-                    authStatus.innerHTML = '❌ Ошибка инициализации авторизации';
-                    return;
-                }
-                
-                try {
-                    const success = await window.authService.signIn();
-                    if (success) {
-                        authStatus.innerHTML = '✅ Авторизация успешна! Теперь можете начать оценку.';
-                        showStartButton();
-                    }
-                } catch (error) {
-                    console.error('Ошибка авторизации:', error);
-                    authStatus.innerHTML = '❌ Ошибка авторизации: ' + error.message;
-                }
-            });
+            console.log('📖 Страница инструкций загружена');
         });
 
-        // Инициализация глобального сервиса авторизации
-        async function initGlobalAuth() {
-            try {
-                console.log('🔧 Инициализация глобального AuthService...');
-                
-                // Инициализируем глобальный сервис
-                const initialized = await window.authService.initialize(config);
-                
-                if (initialized) {
-                    console.log('✅ Глобальный AuthService готов к работе');
-                    updateAuthStatus('Система готова к авторизации');
-                    
-                    // Проверяем, авторизован ли пользователь
-                    if (window.authService.isSignedIn()) {
-                        const userName = window.authService.getUserName();
-                        updateAuthStatus('✅ Авторизован: ' + userName + '. Теперь можете начать оценку!');
-                        showStartButton();
-                    }
-                } else {
-                    console.error('❌ Не удалось инициализировать глобальный AuthService');
-                    updateAuthStatus('❌ Ошибка инициализации Google API');
-                }
-                
-                // Подписываемся на события авторизации
-                window.authService.onAuthSuccess(function(user) {
-                    console.log('✅ Авторизация успешна:', user);
-                    const userName = window.authService.getUserName();
-                    
-                    // Дополнительная проверка состояния
-                    setTimeout(() => {
-                        const isStillSignedIn = window.authService.isSignedIn();
-                        console.log('🔍 Проверка состояния через 1 сек:', {
-                            isSignedIn: isStillSignedIn,
-                            hasUser: !!window.authService.getUser(),
-                            hasToken: !!window.authService.getAccessToken()
-                        });
-                        
-                        if (isStillSignedIn) {
-                            updateAuthStatus('✅ Авторизован: ' + userName + '. Теперь можете начать оценку!');
-                            showStartButton();
-                        } else {
-                            updateAuthStatus('❌ Ошибка: состояние авторизации потеряно');
-                        }
-                    }, 1000);
-                });
-                
-                window.authService.onAuthError(function(message) {
-                    console.error('❌ Ошибка авторизации:', message);
-                    updateAuthStatus('Ошибка авторизации: ' + message);
-                });
-                
-            } catch (error) {
-                console.error('❌ Критическая ошибка инициализации:', error);
-                updateAuthStatus('❌ Критическая ошибка: ' + error.message);
-            }
-        }
-
-        // Обновление статуса авторизации
-        function updateAuthStatus(message) {
-            const authStatus = document.getElementById('auth-status');
-            if (authStatus) {
-                authStatus.innerHTML = message;
-            }
-        }
-
-        // Показать кнопку для перехода на страницу оценки
-        function showStartButton() {
-            const startBtn = document.getElementById('start-evaluation-btn');
-            const authStatus = document.getElementById('auth-status');
-            
-            // Обновляем кнопку
-            startBtn.textContent = '🚀 Начать оценку';
-            startBtn.style.background = 'linear-gradient(135deg, #48bb78, #38a169)';
-            startBtn.style.cursor = 'pointer';
-            
-            // Обновляем обработчик кнопки
-            startBtn.onclick = function() {
-                // Даем время для сохранения состояния
-                setTimeout(() => {
-                    window.location.href = 'evaluation.html';
-                }, 300);
-            };
-            
-            // Добавляем дополнительную информацию
-            authStatus.innerHTML += '<br><br>Нажмите кнопку ниже для перехода к оценке компетенций.';
-        }
-
-        // Функция показа уведомлений (для совместимости с auth.js)
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 15px 20px;
-                border-radius: 8px;
-                color: white;
-                font-weight: 600;
-                z-index: 10001;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                transform: translateX(100%);
-                transition: transform 0.3s ease;
-                max-width: 400px;
-            `;
-
-            const colors = {
-                success: 'linear-gradient(135deg, #48bb78, #38a169)',
-                error: 'linear-gradient(135deg, #f56565, #e53e3e)',
-                warning: 'linear-gradient(135deg, #ed8936, #dd6b20)',
-                info: 'linear-gradient(135deg, #4299e1, #3182ce)'
-            };
-
-            notification.style.background = colors[type] || colors.info;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                notification.style.transform = 'translateX(0)';
-            }, 100);
-
-            setTimeout(() => {
-                notification.style.transform = 'translateX(100%)';
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 300);
-            }, 4000);
-        }
     </script>
 </body>
 </html>

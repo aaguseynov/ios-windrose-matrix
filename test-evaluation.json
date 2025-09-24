@@ -1,0 +1,228 @@
+{
+  "developer": "artem",
+  "evaluator": "Система",
+  "date": "2024-01-15T10:00:00.000Z",
+  "status": "completed",
+  "competencies": {
+    "design": {
+      "level_0": {
+        "selfEvaluation": 2.5,
+        "managerEvaluation": 2.0,
+        "comments": "Хорошее понимание ООП"
+      },
+      "level_1": {
+        "selfEvaluation": 1.5,
+        "managerEvaluation": 1.0,
+        "comments": "Изучает MVC"
+      },
+      "level_2": {
+        "selfEvaluation": 0.5,
+        "managerEvaluation": 0.0,
+        "comments": "Начальный уровень"
+      },
+      "level_3": {
+        "selfEvaluation": 0.0,
+        "managerEvaluation": 0.0,
+        "comments": ""
+      }
+    },
+    "ios": {
+      "level_0": {
+        "selfEvaluation": 3.0,
+        "managerEvaluation": 2.5,
+        "comments": "Отличные знания Swift"
+      },
+      "level_1": {
+        "selfEvaluation": 2.0,
+        "managerEvaluation": 1.5,
+        "comments": "Изучает SwiftUI"
+      },
+      "level_2": {
+        "selfEvaluation": 1.0,
+        "managerEvaluation": 0.5,
+        "comments": "Базовые знания"
+      },
+      "level_3": {
+        "selfEvaluation": 0.0,
+        "managerEvaluation": 0.0,
+        "comments": ""
+      }
+    },
+    "threading": {
+      "level_0": {
+        "selfEvaluation": 2.0,
+        "managerEvaluation": 1.5,
+        "comments": "Понимает GCD"
+      },
+      "level_1": {
+        "selfEvaluation": 1.0,
+        "managerEvaluation": 0.5,
+        "comments": "Изучает OperationQueue"
+      },
+      "level_2": {
+        "selfEvaluation": 0.0,
+        "managerEvaluation": 0.0,
+        "comments": ""
+      },
+      "level_3": {
+        "selfEvaluation": 0.0,
+        "managerEvaluation": 0.0,
+        "comments": ""
+      }
+    },
+    "di": {
+      "level_0": {
+        "selfEvaluation": 1.5,
+        "managerEvaluation": 1.0,
+        "comments": "Понимает принципы DI"
+      },
+      "level_1": {
+        "selfEvaluation": 0.5,
+        "managerEvaluation": 0.0,
+        "comments": "Изучает Swinject"
+      },
+      "level_2": {
+        "selfEvaluation": 0.0,
+        "managerEvaluation": 0.0,
+        "comments": ""
+      },
+      "level_3": {
+        "selfEvaluation": 0.0,
+        "managerEvaluation": 0.0,
+        "comments": ""
+      }
+    },
+    "testing": {
+      "level_0": {
+        "selfEvaluation": 2.0,
+        "managerEvaluation": 1.5,
+        "comments": "Пишет unit-тесты"
+      },
+      "level_1": {
+        "selfEvaluation": 1.0,
+        "managerEvaluation": 0.5,
+        "comments": "Изучает интеграционные тесты"
+      },
+      "level_2": {
+        "selfEvaluation": 0.0,
+        "managerEvaluation": 0.0,
+        "comments": ""
+      },
+      "level_3": {
+        "selfEvaluation": 0.0,
+        "managerEvaluation": 0.0,
+        "comments": ""
+      }
+    },
+    "tools": {
+      "level_0": {
+        "selfEvaluation": 2.5,
+        "managerEvaluation": 2.0,
+        "comments": "Хорошо знает Xcode"
+      },
+      "level_1": {
+        "selfEvaluation": 1.5,
+        "managerEvaluation": 1.0,
+        "comments": "Изучает Instruments"
+      },
+      "level_2": {
+        "selfEvaluation": 0.5,
+        "managerEvaluation": 0.0,
+        "comments": "Базовые знания CI/CD"
+      },
+      "level_3": {
+        "selfEvaluation": 0.0,
+        "managerEvaluation": 0.0,
+        "comments": ""
+      }
+    },
+    "product": {
+      "level_0": {
+        "selfEvaluation": 2.0,
+        "managerEvaluation": 1.5,
+        "comments": "Понимает продукт"
+      },
+      "level_1": {
+        "selfEvaluation": 1.0,
+        "managerEvaluation": 0.5,
+        "comments": "Изучает метрики"
+      },
+      "level_2": {
+        "selfEvaluation": 0.0,
+        "managerEvaluation": 0.0,
+        "comments": ""
+      },
+      "level_3": {
+        "selfEvaluation": 0.0,
+        "managerEvaluation": 0.0,
+        "comments": ""
+      }
+    },
+    "autonomy": {
+      "level_0": {
+        "selfEvaluation": 2.5,
+        "managerEvaluation": 2.0,
+        "comments": "Самостоятельно решает задачи"
+      },
+      "level_1": {
+        "selfEvaluation": 1.5,
+        "managerEvaluation": 1.0,
+        "comments": "Планирует работу"
+      },
+      "level_2": {
+        "selfEvaluation": 0.5,
+        "managerEvaluation": 0.0,
+        "comments": "Начальный уровень лидерства"
+      },
+      "level_3": {
+        "selfEvaluation": 0.0,
+        "managerEvaluation": 0.0,
+        "comments": ""
+      }
+    },
+    "quality": {
+      "level_0": {
+        "selfEvaluation": 2.0,
+        "managerEvaluation": 1.5,
+        "comments": "Следует стандартам кода"
+      },
+      "level_1": {
+        "selfEvaluation": 1.0,
+        "managerEvaluation": 0.5,
+        "comments": "Делает код-ревью"
+      },
+      "level_2": {
+        "selfEvaluation": 0.0,
+        "managerEvaluation": 0.0,
+        "comments": ""
+      },
+      "level_3": {
+        "selfEvaluation": 0.0,
+        "managerEvaluation": 0.0,
+        "comments": ""
+      }
+    },
+    "teamwork": {
+      "level_0": {
+        "selfEvaluation": 2.5,
+        "managerEvaluation": 2.0,
+        "comments": "Хорошо работает в команде"
+      },
+      "level_1": {
+        "selfEvaluation": 1.5,
+        "managerEvaluation": 1.0,
+        "comments": "Участвует в обсуждениях"
+      },
+      "level_2": {
+        "selfEvaluation": 0.5,
+        "managerEvaluation": 0.0,
+        "comments": "Начальный уровень менторства"
+      },
+      "level_3": {
+        "selfEvaluation": 0.0,
+        "managerEvaluation": 0.0,
+        "comments": ""
+      }
+    }
+  }
+}

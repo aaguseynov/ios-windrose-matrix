@@ -19,12 +19,12 @@ class FileManager {
      * Проверка авторизации
      */
     isAuthorized() {
-        // Сначала проверяем глобальный AuthService
+        // Проверяем глобальный AuthService
         if (window.authService && window.authService.isSignedIn()) {
             return true;
         }
         
-        // Затем проверяем переданный auth (может быть AuthService)
+        // Проверяем переданный auth (может быть AuthService)
         if (this.auth && this.auth.isSignedIn && this.auth.isSignedIn()) {
             return true;
         }
@@ -38,16 +38,89 @@ class FileManager {
     }
 
     /**
+     * Диагностика конфликтов между FileManager и GoogleDrive
+     */
+    diagnoseConflicts() {
+        console.log('🔍 Диагностика конфликтов FileManager и GoogleDrive...');
+        
+        // Проверяем наличие GoogleDrive
+        if (!this.drive) {
+            console.error('❌ GoogleDrive не инициализирован');
+            return false;
+        }
+        
+        // Проверяем методы GoogleDrive
+        const requiredMethods = ['getFiles', 'downloadFile', 'getFileInfo', 'getFilesFromFolder', 'showNotification'];
+        const missingMethods = [];
+        
+        requiredMethods.forEach(method => {
+            if (typeof this.drive[method] !== 'function') {
+                missingMethods.push(method);
+            }
+        });
+        
+        if (missingMethods.length > 0) {
+            console.error('❌ Отсутствуют методы GoogleDrive:', missingMethods);
+            return false;
+        }
+        
+        // Проверяем конфигурацию
+        const config = window.config || globalThis.config;
+        console.log('🔍 Проверка конфигурации:');
+        console.log('  - window.config:', !!window.config);
+        console.log('  - globalThis.config:', !!globalThis.config);
+        console.log('  - config:', !!config);
+        console.log('  - typeof config:', typeof config);
+        console.log('  - config === null:', config === null);
+        console.log('  - config === undefined:', config === undefined);
+        
+        if (config) {
+            console.log('  - config.drive:', !!config.drive);
+            console.log('  - config.drive.folderId:', config.drive?.folderId);
+        }
+        
+        if (!config || !config.drive || !config.drive.folderId) {
+            console.error('❌ Конфигурация GoogleDrive не найдена');
+            console.log('🔍 Доступные глобальные объекты:', Object.keys(window).filter(k => k.includes('config') || k.includes('Config')));
+            
+            // Дополнительная диагностика
+            if (config) {
+                console.log('📋 Структура config:', Object.keys(config));
+                if (config.drive) {
+                    console.log('📋 Структура config.drive:', Object.keys(config.drive));
+                } else {
+                    console.log('❌ config.drive отсутствует');
+                }
+            } else {
+                console.log('❌ config отсутствует');
+            }
+            
+            return false;
+        }
+        
+        console.log('✅ GoogleDrive инициализирован корректно');
+        console.log('📁 ID папки:', config.drive.folderId);
+        console.log('🔧 Доступные методы:', Object.getOwnPropertyNames(Object.getPrototypeOf(this.drive)));
+        
+        return true;
+    }
+
+    /**
      * Показать модальное окно выбора файлов
      */
     async showFileSelector(options = {}) {
         try {
             console.log('📁 Открытие селектора файлов...');
             
+            // Диагностика конфликтов
+            if (!this.diagnoseConflicts()) {
+                throw new Error('Обнаружены конфликты между FileManager и GoogleDrive');
+            }
+            
             // Проверяем авторизацию
             if (!this.isAuthorized()) {
                 console.error('❌ FileManager: Пользователь не авторизован');
-                throw new Error('Пользователь не авторизован. Необходимо войти в Google.');
+                throw new Error('Пользователь не авторизован. Необходимо войти в Google для работы с файлами.');
             }
             
             // Дополнительная проверка токена
@@ -70,18 +143,119 @@ class FileManager {
             
             console.log('✅ Авторизация подтверждена для FileManager');
             
-            // Получаем список JSON файлов только из указанной папки
+            // Получаем список JSON файлов по всему Google Drive
             console.log('📁 FileManager: запрос файлов с параметрами:', {
                 mimeType: 'application/json',
-                folderOnly: true,
+                folderOnly: false, // Ищем по всему Drive
                 pageSize: options.pageSize || 50
             });
             
-            const result = await this.drive.getFiles({
+            // Стратегия 1: Ищем файлы в общей папке (приоритет)
+            console.log('🔍 Стратегия 1: Поиск в общей папке...');
+            const config = window.config || globalThis.config;
+            console.log('📁 ID папки из конфигурации:', config?.drive?.folderId);
+            let result = await this.drive.getFiles({
                 mimeType: 'application/json',
-                folderOnly: true, // Ищем файлы в указанной папке
+                folderOnly: true, // Ищем в конкретной папке
+                filterByPrefix: true, // Фильтруем по префиксу
                 pageSize: options.pageSize || 50
             });
+            
+            console.log('📊 Результат поиска в папке:', result.success ? `Найдено ${result.files.length} файлов` : `Ошибка: ${result.error}`);
+
+            // Стратегия 2: Если файлы не найдены в папке, ищем все JSON файлы в папке
+            if (result.success && result.files.length === 0) {
+                console.log('🔍 Стратегия 2: Поиск всех JSON файлов в папке...');
+                result = await this.drive.getFiles({
+                    mimeType: 'application/json',
+                    folderOnly: true, // Ищем в конкретной папке
+                    filterByPrefix: false, // Без фильтра по префиксу
+                    pageSize: options.pageSize || 50
+                });
+            }
+
+            // Стратегия 3: Если все еще не найдены, ищем по всему Google Drive
+            if (result.success && result.files.length === 0) {
+                console.log('🔍 Стратегия 3: Поиск по всему Google Drive...');
+                result = await this.drive.getFiles({
+                    mimeType: 'application/json',
+                    folderOnly: false, // Ищем по всему Google Drive
+                    filterByPrefix: true, // С фильтром по префиксу
+                    pageSize: options.pageSize || 50
+                });
+                
+                console.log('📊 Результат поиска по всему Drive:', result.success ? `Найдено ${result.files.length} файлов` : `Ошибка: ${result.error}`);
+                
+                // Диагностика найденных файлов
+                if (result.success && result.files.length > 0) {
+                    console.log('🔍 Найденные файлы по всему Drive:');
+                    result.files.forEach((file, index) => {
+                        console.log(`  ${index + 1}. ${file.name}`);
+                        console.log(`     - ID: ${file.id}`);
+                        console.log(`     - Владелец: ${file.owners ? file.owners[0]?.displayName || 'неизвестно' : 'неизвестно'}`);
+                        console.log(`     - Общий доступ: ${file.shared ? 'да' : 'нет'}`);
+                        console.log(`     - Родительская папка: ${file.parents ? file.parents.join(', ') : 'неизвестно'}`);
+                        console.log(`     - Последний редактор: ${file.lastModifyingUser ? file.lastModifyingUser.displayName || 'неизвестно' : 'неизвестно'}`);
+                        console.log(`     - Описание: ${file.description || 'нет'}`);
+                        console.log(`     - Ссылка для просмотра: ${file.webViewLink || 'нет'}`);
+                        
+                        // Информация о правах доступа
+                        if (file.capabilities) {
+                            console.log(`     - Права доступа:`);
+                            console.log(`       - Может читать: ${file.capabilities.canRead || false}`);
+                            console.log(`       - Может редактировать: ${file.capabilities.canEdit || false}`);
+                            console.log(`       - Может удалять: ${file.capabilities.canDelete || false}`);
+                            console.log(`       - Может делиться: ${file.capabilities.canShare || false}`);
+                        }
+                        
+                        // Информация о разрешениях
+                        if (file.permissions && file.permissions.length > 0) {
+                            console.log(`     - Разрешения (${file.permissions.length}):`);
+                            file.permissions.forEach((permission, permIndex) => {
+                                console.log(`       ${permIndex + 1}. ${permission.role} - ${permission.type} (${permission.displayName || 'неизвестно'})`);
+                            });
+                        }
+                    });
+                }
+            }
+
+            // Стратегия 4: Поиск всех JSON файлов по всему Google Drive
+            if (result.success && result.files.length === 0) {
+                console.log('🔍 Стратегия 4: Поиск всех JSON файлов по всему Google Drive...');
+                result = await this.drive.getFiles({
+                    mimeType: 'application/json',
+                    folderOnly: false,
+                    filterByPrefix: false,
+                    pageSize: options.pageSize || 50
+                });
+            }
+
+            // Стратегия 5: Поиск файлов с общим доступом
+            if (result.success && result.files.length === 0) {
+                console.log('🔍 Стратегия 5: Поиск файлов с общим доступом...');
+                result = await this.drive.getFiles({
+                    mimeType: 'application/json',
+                    folderOnly: false,
+                    filterByPrefix: false,
+                    includeShared: true, // Включаем общие файлы
+                    pageSize: options.pageSize || 50
+                });
+            }
+
+            // Стратегия 6: Прямой поиск в папке по ID
+            if (result.success && result.files.length === 0) {
+                console.log('🔍 Стратегия 6: Прямой поиск в папке по ID...');
+                try {
+                    // Пробуем получить файлы напрямую из папки
+                    const folderResult = await this.drive.getFilesFromFolder();
+                    if (folderResult.success && folderResult.files.length > 0) {
+                        console.log(`📁 Найдено ${folderResult.files.length} файлов в папке`);
+                        result = folderResult;
+                    }
+                } catch (error) {
+                    console.log('⚠️ Ошибка при прямом поиске в папке:', error.message);
+                }
+            }
 
             if (!result.success) {
                 throw new Error(result.error);
@@ -89,6 +263,27 @@ class FileManager {
 
             this.currentFiles = result.files;
             this.selectedFiles = [];
+            
+            console.log(`📁 Найдено файлов: ${result.files.length}`);
+            
+            // Дополнительная диагностика файлов
+            if (result.files.length > 0) {
+                console.log('📋 Информация о найденных файлах:');
+                result.files.forEach((file, index) => {
+                    console.log(`  ${index + 1}. ${file.name}`);
+                    console.log(`     - ID: ${file.id}`);
+                    console.log(`     - Размер: ${file.size ? this.formatFileSize(file.size) : 'неизвестно'}`);
+                    console.log(`     - Владелец: ${file.owners ? file.owners[0]?.displayName || 'неизвестно' : 'неизвестно'}`);
+                    console.log(`     - Общий доступ: ${file.shared ? 'да' : 'нет'}`);
+                    console.log(`     - Изменен: ${file.modifiedTime ? new Date(file.modifiedTime).toLocaleString('ru-RU') : 'неизвестно'}`);
+                });
+            } else {
+                console.log('❌ Файлы не найдены. Возможные причины:');
+                console.log('   - Файлы принадлежат другому пользователю');
+                console.log('   - Нет прав доступа к файлам');
+                console.log('   - Файлы находятся в другой папке');
+                console.log('   - Неправильный тип файла или имя');
+            }
             
             // Показываем модальное окно
             this.renderFileSelectorModal(result.files, options);
@@ -123,20 +318,36 @@ class FileManager {
             const fileSize = file.size ? this.formatFileSize(file.size) : '';
             const modifiedDate = new Date(file.modifiedTime).toLocaleDateString('ru-RU');
             
+            // Определяем тип файла по имени
+            const isEvaluationFile = file.name.includes('ios-windrose-evaluation') || file.name.includes('evaluation');
+            const fileTypeIndicator = isEvaluationFile ? '📊' : '📄';
+            
+            // Информация о владельце
+            const ownerInfo = file.owners && file.owners[0] ? 
+                `${file.owners[0].displayName || 'Неизвестно'}` : 
+                'Неизвестно';
+            
+            
             return `
                 <div class="file-item ${isSelected ? 'selected' : ''}" 
                      data-file-id="${file.id}"
                      onclick="fileManager.toggleFileSelection('${file.id}')">
                     <div class="file-icon">
-                        ${this.getFileIcon(file.mimeType)}
+                        ${fileTypeIndicator}
                     </div>
                     <div class="file-info">
                         <div class="file-name">${file.name}</div>
                         <div class="file-meta">
-                            ${fileSize} • ${modifiedDate}
+                            ${fileSize} • ${modifiedDate} ${isEvaluationFile ? '• Файл оценки' : ''}
+                            <br><small style="color: #666;">Владелец: ${ownerInfo} ${file.shared ? '• Общий доступ' : ''}</small>
                         </div>
                     </div>
                     <div class="file-actions">
+                        <button class="btn-preview" 
+                                onclick="event.stopPropagation(); fileManager.previewFile('${file.id}')"
+                                title="Предварительный просмотр">
+                            👁️
+                        </button>
                         <button class="btn-load" 
                                 onclick="event.stopPropagation(); fileManager.loadFile('${file.id}')"
                                 title="Загрузить файл">
@@ -151,7 +362,7 @@ class FileManager {
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>📁 Выберите файл оценки</h3>
-                    <p style="margin: 5px 0; color: #666; font-size: 14px;">Выберите один JSON файл для загрузки данных</p>
+                    <p style="margin: 5px 0; color: #666; font-size: 14px;">Найдено файлов: ${files.length}. Выберите один JSON файл для загрузки данных</p>
                     <button class="btn-close" onclick="fileManager.closeFileSelector()">❌</button>
                 </div>
                 
@@ -173,7 +384,7 @@ class FileManager {
                         <button class="btn-primary" 
                                 onclick="fileManager.confirmSelection()"
                                 disabled>
-                            Загрузить выбранный
+                            📥 Загрузить выбранный файл
                         </button>
                     </div>
                 </div>
@@ -275,6 +486,21 @@ class FileManager {
                 .file-actions {
                     display: flex;
                     gap: 10px;
+                }
+                
+                .btn-preview {
+                    background: #4299e1;
+                    color: white;
+                    border: none;
+                    padding: 8px 12px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    transition: background 0.2s;
+                }
+                
+                .btn-preview:hover {
+                    background: #3182ce;
                 }
                 
                 .btn-load {
@@ -398,20 +624,29 @@ class FileManager {
     }
 
     /**
-     * Подтверждение выбора файлов
+     * Подтверждение выбора файлов - загружает выбранный файл
      */
-    confirmSelection() {
-        if (this.selectedFiles.length === 0) return;
-        
-        const selectedFilesData = this.currentFiles.filter(file => 
-            this.selectedFiles.includes(file.id)
-        );
-        
-        if (this.onFilesSelected) {
-            this.onFilesSelected(selectedFilesData);
+    async confirmSelection() {
+        if (this.selectedFiles.length === 0) {
+            console.warn('⚠️ Нет выбранных файлов для загрузки');
+            return;
         }
         
-        this.closeFileSelector();
+        // Берем первый выбранный файл (так как разрешен выбор только одного файла)
+        const fileId = this.selectedFiles[0];
+        console.log('📥 Загружаем выбранный файл:', fileId);
+        
+        try {
+            // Закрываем модальное окно выбора
+            this.closeFileSelector();
+            
+            // Загружаем файл
+            await this.loadFile(fileId);
+            
+        } catch (error) {
+            console.error('❌ Ошибка загрузки выбранного файла:', error);
+            this.drive.showNotification('Ошибка загрузки файла: ' + error.message, 'error');
+        }
     }
 
     /**
@@ -420,6 +655,20 @@ class FileManager {
     async loadFile(fileId) {
         try {
             console.log('📥 Загрузка файла:', fileId);
+            
+            // Сначала получаем информацию о файле для проверки размера
+            const fileInfo = await this.drive.getFileInfo(fileId);
+            if (fileInfo.success) {
+                const fileSize = fileInfo.file.size;
+                const config = window.config || globalThis.config;
+                const maxSize = config?.drive?.maxFileSize;
+                
+                console.log(`📊 Размер файла: ${this.formatFileSize(fileSize)}, Максимум: ${this.formatFileSize(maxSize)}`);
+                
+                if (fileSize > maxSize) {
+                    throw new Error(`Файл слишком большой: ${this.formatFileSize(fileSize)}. Максимальный размер: ${this.formatFileSize(maxSize)}`);
+                }
+            }
             
             const result = await this.drive.downloadFile(fileId);
             if (!result.success) {
@@ -440,6 +689,258 @@ class FileManager {
             this.drive.showNotification('Ошибка загрузки файла: ' + error.message, 'error');
         }
     }
+
+    /**
+     * Предварительный просмотр файла
+     */
+    async previewFile(fileId) {
+        try {
+            console.log('👁️ Предварительный просмотр файла:', fileId);
+            
+            // Показываем индикатор загрузки
+            this.drive.showNotification('Загружаем файл для просмотра...', 'info');
+            
+            // Скачиваем файл
+            const result = await this.drive.downloadFile(fileId);
+            
+            // Парсим JSON
+            const data = JSON.parse(result.content);
+            console.log('📄 Данные из файла после парсинга:', data);
+            console.log('📄 Структура competencies:', data.competencies);
+            
+            // Показываем модальное окно с предварительным просмотром
+            this.showPreviewModal(data, fileId);
+            
+        } catch (error) {
+            console.error('❌ Ошибка предварительного просмотра:', error);
+            this.drive.showNotification('Ошибка предварительного просмотра: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * Показ модального окна с предварительным просмотром
+     */
+    showPreviewModal(data, fileId) {
+        // Создаем модальное окно
+        const modal = document.createElement('div');
+        modal.id = 'preview-modal';
+        modal.className = 'modal';
+        
+        // Форматируем JSON для отображения
+        const formattedJson = JSON.stringify(data, null, 2);
+        
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 800px; max-height: 80vh;">
+                <div class="modal-header">
+                    <h3>👁️ Предварительный просмотр файла</h3>
+                    <button class="btn-close" onclick="fileManager.closePreviewModal()">❌</button>
+                </div>
+                <div class="modal-body">
+                    <div style="margin-bottom: 15px;">
+                        <strong>Разработчик:</strong> ${data.developer || 'Не указан'}<br>
+                        <strong>Дата:</strong> ${data.date ? new Date(data.date).toLocaleDateString('ru-RU') : 'Не указана'}<br>
+                        <strong>Статус:</strong> ${data.status || 'Не указан'}
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <h4>Компетенции:</h4>
+                        <div id="competencies-preview" style="max-height: 300px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px;">
+                            ${this.formatCompetenciesForPreview(data.competencies)}
+                        </div>
+                    </div>
+                    <details>
+                        <summary style="cursor: pointer; font-weight: bold; margin-bottom: 10px;">📄 Полный JSON</summary>
+                        <pre style="background: #f8f9fa; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 11px; max-height: 300px; overflow-y: auto;">${formattedJson}</pre>
+                    </details>
+                </div>
+                <div class="modal-footer">
+                    <div></div>
+                    <div class="modal-actions">
+                        <button class="btn-secondary" onclick="fileManager.closePreviewModal()">Закрыть</button>
+                        <button class="btn-primary" onclick="fileManager.loadFileFromPreview('${fileId}')">📥 Загрузить файл</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Добавляем стили для модального окна
+        const style = document.createElement('style');
+        style.textContent = `
+            .modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            }
+            
+            .modal-content {
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+                display: flex;
+                flex-direction: column;
+                max-width: 90vw;
+                max-height: 90vh;
+            }
+            
+            .modal-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 20px;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            
+            .modal-header h3 {
+                margin: 0;
+                color: #2d3748;
+            }
+            
+            .btn-close {
+                background: none;
+                border: none;
+                font-size: 18px;
+                cursor: pointer;
+                padding: 5px;
+                border-radius: 4px;
+                transition: background 0.2s;
+            }
+            
+            .btn-close:hover {
+                background: #f7fafc;
+            }
+            
+            .modal-body {
+                flex: 1;
+                overflow-y: auto;
+                padding: 20px;
+            }
+            
+            .modal-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 20px;
+                border-top: 1px solid #e2e8f0;
+            }
+            
+            .modal-actions {
+                display: flex;
+                gap: 10px;
+            }
+            
+            .btn-secondary, .btn-primary {
+                padding: 10px 20px;
+                border-radius: 6px;
+                border: none;
+                cursor: pointer;
+                font-size: 14px;
+                transition: background 0.2s;
+            }
+            
+            .btn-secondary {
+                background: #e2e8f0;
+                color: #4a5568;
+            }
+            
+            .btn-secondary:hover {
+                background: #cbd5e0;
+            }
+            
+            .btn-primary {
+                background: #4299e1;
+                color: white;
+            }
+            
+            .btn-primary:hover {
+                background: #3182ce;
+            }
+        `;
+        
+        document.head.appendChild(style);
+        document.body.appendChild(modal);
+    }
+
+    /**
+     * Форматирование компетенций для предварительного просмотра
+     */
+    formatCompetenciesForPreview(competencies) {
+        console.log('🔍 formatCompetenciesForPreview получил данные:', competencies);
+        
+        if (!competencies) return 'Нет данных о компетенциях';
+        
+        let html = '';
+        Object.keys(competencies).forEach(compKey => {
+            const comp = competencies[compKey];
+            console.log(`🔍 Обрабатываем компетенцию ${compKey}:`, comp);
+            
+            html += `<div style="margin-bottom: 10px;"><strong>${comp.name || compKey}:</strong><br>`;
+            
+            // Проверяем разные возможные структуры данных
+            if (comp.levels) {
+                console.log(`🔍 У компетенции ${compKey} есть levels:`, comp.levels);
+                Object.keys(comp.levels).forEach(levelKey => {
+                    const level = comp.levels[levelKey];
+                    console.log(`🔍 Уровень ${levelKey}:`, level);
+                    html += `  ${levelKey}: самооценка=${level.selfEvaluation || 0}, менеджер=${level.managerEvaluation || 0}`;
+                    if (level.comments) {
+                        html += `, комментарии="${level.comments}"`;
+                    }
+                    html += '<br>';
+                });
+            } else {
+                // Возможно, данные в другом формате - попробуем обработать напрямую
+                console.log(`🔍 У компетенции ${compKey} нет levels, проверяем прямые свойства:`, comp);
+                Object.keys(comp).forEach(levelKey => {
+                    if (levelKey !== 'name' && typeof comp[levelKey] === 'object') {
+                        const level = comp[levelKey];
+                        console.log(`🔍 Прямое свойство ${levelKey}:`, level);
+                        html += `  ${levelKey}: самооценка=${level.selfEvaluation || 0}, менеджер=${level.managerEvaluation || 0}`;
+                        if (level.comments) {
+                            html += `, комментарии="${level.comments}"`;
+                        }
+                        html += '<br>';
+                    }
+                });
+            }
+            html += '</div>';
+        });
+        
+        const result = html || 'Нет данных о компетенциях';
+        console.log('🔍 Результат formatCompetenciesForPreview:', result);
+        return result;
+    }
+
+    /**
+     * Загрузка файла из предварительного просмотра
+     */
+    async loadFileFromPreview(fileId) {
+        console.log('📥 Загружаем файл из предварительного просмотра:', fileId);
+        this.closePreviewModal();
+        await this.loadFile(fileId);
+    }
+
+    /**
+     * Закрытие модального окна предварительного просмотра
+     */
+    closePreviewModal() {
+        const modal = document.getElementById('preview-modal');
+        if (modal) {
+            modal.remove();
+        }
+        
+        // Удаляем добавленные стили
+        const style = document.querySelector('style');
+        if (style && style.textContent.includes('.modal {')) {
+            style.remove();
+        }
+    }
+
 
     /**
      * Закрытие селектора файлов
