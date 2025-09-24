@@ -70,10 +70,16 @@ class FileManager {
             
             console.log('✅ Авторизация подтверждена для FileManager');
             
-            // Получаем список JSON файлов
+            // Получаем список JSON файлов только из указанной папки
+            console.log('📁 FileManager: запрос файлов с параметрами:', {
+                mimeType: 'application/json',
+                folderOnly: true,
+                pageSize: options.pageSize || 50
+            });
+            
             const result = await this.drive.getFiles({
                 mimeType: 'application/json',
-                folderOnly: false, // Ищем файлы, а не папки
+                folderOnly: true, // Ищем файлы в указанной папке
                 pageSize: options.pageSize || 50
             });
 

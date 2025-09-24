@@ -1584,27 +1584,49 @@
             
             // Загружаем данные в поля ввода
             const inputs = document.querySelectorAll('.evaluation-input');
+            console.log('📝 Найдено полей ввода:', inputs.length);
+            console.log('📊 Данные для загрузки:', evaluationData);
             
             if (evaluationData.competencies) {
+                console.log('🔍 Компетенции найдены:', Object.keys(evaluationData.competencies));
                 let inputIndex = 0;
+                
                 Object.keys(evaluationData.competencies).forEach(compKey => {
                     const compData = evaluationData.competencies[compKey];
+                    console.log(`📋 Компетенция ${compKey}:`, compData);
+                    
                     Object.keys(compData).forEach(levelKey => {
                         const levelData = compData[levelKey];
+                        console.log(`  📊 Уровень ${levelKey}:`, levelData);
                         
+                        // Самооценка (inputIndex * 3)
                         if (inputs[inputIndex * 3]) {
-                            inputs[inputIndex * 3].value = levelData.selfEvaluation || 0;
+                            const selfEval = levelData.selfEvaluation || 0;
+                            inputs[inputIndex * 3].value = selfEval;
+                            console.log(`    ✅ Самооценка [${inputIndex * 3}]: ${selfEval}`);
                         }
+                        
+                        // Оценка менеджера (inputIndex * 3 + 1)
                         if (inputs[inputIndex * 3 + 1]) {
-                            inputs[inputIndex * 3 + 1].value = levelData.managerEvaluation || 0;
+                            const managerEval = levelData.managerEvaluation || 0;
+                            inputs[inputIndex * 3 + 1].value = managerEval;
+                            console.log(`    ✅ Оценка менеджера [${inputIndex * 3 + 1}]: ${managerEval}`);
                         }
+                        
+                        // Комментарии (inputIndex * 3 + 2)
                         if (inputs[inputIndex * 3 + 2]) {
-                            inputs[inputIndex * 3 + 2].value = levelData.comments || '';
+                            const comments = levelData.comments || '';
+                            inputs[inputIndex * 3 + 2].value = comments;
+                            console.log(`    ✅ Комментарии [${inputIndex * 3 + 2}]: "${comments}"`);
                         }
                         
                         inputIndex++;
                     });
                 });
+                
+                console.log(`✅ Загружено ${inputIndex} уровней компетенций`);
+            } else {
+                console.log('⚠️ Компетенции не найдены в данных');
             }
             
             // Обновляем диаграмму и прогресс
@@ -1612,6 +1634,14 @@
             
             // Обновляем информацию об оценке
             updateEvaluationInfo(evaluationData);
+            
+            // Принудительно обновляем кнопки и UI
+            updateButtons();
+            
+            // Показываем уведомление об успешной загрузке
+            showNotification('Данные успешно загружены в форму!', 'success');
+            
+            console.log('✅ Загрузка данных завершена');
         }
 
         // Получение имени разработчика по коду

@@ -131,8 +131,18 @@ class GoogleDrive {
             });
 
             // Если указана папка, ищем файлы только в ней
+            console.log('🔍 Поиск файлов:', {
+                folderId: this.folderId,
+                folderOnly: options.folderOnly,
+                mimeType: options.mimeType
+            });
+            
             if (this.folderId && options.folderOnly !== false) {
-                params.append('q', `'${this.folderId}' in parents`);
+                const query = `'${this.folderId}' in parents`;
+                params.append('q', query);
+                console.log('📁 Поиск в папке:', query);
+            } else {
+                console.log('🌐 Поиск во всем Drive (folderOnly = false или folderId отсутствует)');
             }
 
             // Если указан тип файлов
