@@ -58,8 +58,52 @@ class GoogleDrive {
                 }
             }
             
-            // НЕ пытаемся получить новый токен через Google Identity Services
-            // Это должно вызывать только окно авторизации
+            // Если пользователь авторизован, но токена нет, пытаемся получить новый токен
+            if (window.authService && window.authService.isSignedIn()) {
+                console.log('🔄 Пользователь авторизован, но токен отсутствует. Пытаемся получить новый токен...');
+                
+                try {
+                    // Пытаемся получить токен через Google Identity Services
+                    const tokenClient = window.google.accounts.oauth2.initTokenClient({
+                        client_id: window.authService.auth.clientId,
+                        scope: 'https://www.googleapis.com/auth/drive.file',
+                        callback: (response) => {
+                            if (response.access_token) {
+                                console.log('✅ Новый токен получен через Google Identity Services');
+                                // Обновляем токен в AuthService
+                                if (window.authService.auth) {
+                                    window.authService.auth.accessToken = response.access_token;
+                                    window.authService.auth.saveAuthState();
+                                }
+                                return response.access_token;
+                            }
+                        }
+                    });
+                    
+                    tokenClient.requestAccessToken();
+                    
+                    // Ждем получения токена
+                    return new Promise((resolve, reject) => {
+                        const timeout = setTimeout(() => {
+                            reject(new Error('Таймаут получения токена'));
+                        }, 10000);
+                        
+                        const checkToken = () => {
+                            if (window.authService.auth && window.authService.auth.accessToken) {
+                                clearTimeout(timeout);
+                                resolve(window.authService.auth.accessToken);
+                            } else {
+                                setTimeout(checkToken, 100);
+                            }
+                        };
+                        checkToken();
+                    });
+                    
+                } catch (error) {
+                    console.error('❌ Ошибка получения нового токена:', error);
+                }
+            }
+            
             console.error('❌ Токен доступа не найден. Пользователь должен авторизоваться через instructions.html');
             throw new Error('Пользователь не авторизован. Перейдите на страницу инструкций для авторизации.');
             

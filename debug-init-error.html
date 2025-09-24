@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диагностика ошибки инициализации</title>
+    <script src="https://aaguseynov.github.io/ios-windrose-matrix/env-vars.js"></script>
+    <script src="config.js"></script>
+    <script src="new-auth.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover { background: #3367d6; }
+        .log {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+        }
+        .step {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4285f4;
+        }
+        .step.success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        .step.error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .step.warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Диагностика ошибки инициализации</h1>
+        
+        <div id="status" class="status info">
+            Инициализация...
+        </div>
+        
+        <div>
+            <button onclick="runDiagnostic()">🔍 Полная диагностика</button>
+            <button onclick="testConfig()">⚙️ Тест конфигурации</button>
+            <button onclick="testAuthService()">🔧 Тест AuthService</button>
+            <button onclick="clearLog()">🗑️ Очистить лог</button>
+        </div>
+        
+        <div id="steps"></div>
+        
+        <div class="log" id="log">
+            <!-- Логи будут отображены здесь -->
+        </div>
+    </div>
+
+    <script>
+        let authService = null;
+        
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                updateStatus('⏳ Инициализация...', 'info');
+                log('🚀 Начало инициализации');
+                
+                // Проверяем наличие AuthService
+                if (typeof window.authService !== 'undefined') {
+                    log('✅ window.authService найден');
+                    
+                    // Инициализируем глобальный сервис авторизации
+                    const initialized = await window.authService.initialize(config);
+                    
+                    if (initialized) {
+                        updateStatus('✅ AuthService инициализирован', 'success');
+                        authService = window.authService;
+                        log('✅ AuthService готов к работе');
+                    } else {
+                        updateStatus('❌ Ошибка инициализации AuthService', 'error');
+                        log('❌ Ошибка инициализации AuthService');
+                    }
+                } else {
+                    updateStatus('❌ window.authService не найден', 'error');
+                    log('❌ window.authService не найден - файл new-auth.js не загружен');
+                }
+                
+            } catch (error) {
+                updateStatus('❌ Ошибка: ' + error.message, 'error');
+                log('❌ Ошибка инициализации: ' + error.message);
+                log('❌ Stack trace: ' + error.stack);
+            }
+        });
+        
+        function updateStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+        
+        function log(message) {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logEl.innerHTML += `[${timestamp}] ${message}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        function addStep(title, status, details) {
+            const stepsEl = document.getElementById('steps');
+            const step = document.createElement('div');
+            step.className = `step ${status}`;
+            step.innerHTML = `
+                <strong>${title}</strong><br>
+                ${details}
+            `;
+            stepsEl.appendChild(step);
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            document.getElementById('steps').innerHTML = '';
+        }
+        
+        async function runDiagnostic() {
+            document.getElementById('steps').innerHTML = '';
+            
+            log('🔍 Начало полной диагностики...');
+            
+            try {
+                // Шаг 1: Проверка загрузки скриптов
+                if (typeof window.CLIENT_ID !== 'undefined') {
+                    addStep('1. env-vars.js', 'success', `CLIENT_ID загружен: ${window.CLIENT_ID.substring(0, 20)}...`);
+                } else {
+                    addStep('1. env-vars.js', 'error', 'CLIENT_ID не загружен');
+                }
+                
+                if (typeof config !== 'undefined') {
+                    addStep('2. config.js', 'success', `config загружен, clientId: ${config.clientId ? config.clientId.substring(0, 20) + '...' : 'нет'}`);
+                } else {
+                    addStep('2. config.js', 'error', 'config не загружен');
+                }
+                
+                if (typeof window.authService !== 'undefined') {
+                    addStep('3. new-auth.js', 'success', 'window.authService доступен');
+                } else {
+                    addStep('3. new-auth.js', 'error', 'window.authService недоступен');
+                }
+                
+                // Шаг 4: Проверка конфигурации
+                if (config && config.clientId && !config.clientId.includes('CLIENT_ID_PLACEHOLDER')) {
+                    addStep('4. Конфигурация', 'success', 'Client ID настроен корректно');
+                } else {
+                    addStep('4. Конфигурация', 'error', 'Client ID не настроен или содержит placeholder');
+                }
+                
+                // Шаг 5: Проверка инициализации
+                if (window.authService) {
+                    try {
+                        const initialized = await window.authService.initialize(config);
+                        if (initialized) {
+                            addStep('5. Инициализация', 'success', 'AuthService инициализирован успешно');
+                        } else {
+                            addStep('5. Инициализация', 'error', 'AuthService не инициализирован');
+                        }
+                    } catch (error) {
+                        addStep('5. Инициализация', 'error', `Ошибка: ${error.message}`);
+                    }
+                } else {
+                    addStep('5. Инициализация', 'error', 'AuthService недоступен');
+                }
+                
+                log('✅ Диагностика завершена');
+                
+            } catch (error) {
+                log('❌ Ошибка в диагностике: ' + error.message);
+                addStep('Ошибка диагностики', 'error', error.message);
+            }
+        }
+        
+        function testConfig() {
+            log('⚙️ Тестирование конфигурации...');
+            
+            try {
+                log('Проверка window переменных:');
+                log(`  - window.CLIENT_ID: ${window.CLIENT_ID ? 'есть (' + window.CLIENT_ID.substring(0, 20) + '...)' : 'нет'}`);
+                log(`  - window.CLIENT_SECRET: ${window.CLIENT_SECRET ? 'есть' : 'нет'}`);
+                log(`  - window.PROJECT_ID: ${window.PROJECT_ID ? 'есть' : 'нет'}`);
+                
+                log('Проверка config:');
+                log(`  - config: ${config ? 'есть' : 'нет'}`);
+                if (config) {
+                    log(`  - config.clientId: ${config.clientId ? 'есть (' + config.clientId.substring(0, 20) + '...)' : 'нет'}`);
+                    log(`  - config.clientSecret: ${config.clientSecret ? 'есть' : 'нет'}`);
+                    log(`  - config.projectId: ${config.projectId ? 'есть' : 'нет'}`);
+                }
+                
+            } catch (error) {
+                log('❌ Ошибка в тесте конфигурации: ' + error.message);
+            }
+        }
+        
+        function testAuthService() {
+            log('🔧 Тестирование AuthService...');
+            
+            try {
+                if (typeof window.authService === 'undefined') {
+                    log('❌ window.authService не найден');
+                    return;
+                }
+                
+                log('AuthService найден:');
+                log(`  - Тип: ${typeof window.authService}`);
+                log(`  - Конструктор: ${window.authService.constructor.name}`);
+                log(`  - isInitialized: ${window.authService.isInitialized}`);
+                
+                // Проверяем методы
+                const methods = ['initialize', 'isSignedIn', 'getUser', 'getAccessToken', 'signIn', 'signOut'];
+                methods.forEach(method => {
+                    if (typeof window.authService[method] === 'function') {
+                        log(`  ✅ Метод ${method} доступен`);
+                    } else {
+                        log(`  ❌ Метод ${method} недоступен`);
+                    }
+                });
+                
+            } catch (error) {
+                log('❌ Ошибка в тесте AuthService: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

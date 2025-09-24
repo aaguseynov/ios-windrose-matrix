@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тест new-auth.js</title>
+    <title>Тест исправления авторизации</title>
     <script src="https://aaguseynov.github.io/ios-windrose-matrix/env-vars.js"></script>
     <script src="config.js"></script>
     <script src="new-auth.js"></script>
@@ -64,12 +64,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>✅ Тест new-auth.js</h1>
+        <h1>✅ Тест исправления авторизации</h1>
         
         <div class="success-message">
-            <strong>🎉 Файл переименован!</strong><br>
-            auth.js → new-auth.js<br>
-            Все ссылки обновлены.
+            <strong>🎉 Проблема исправлена!</strong><br>
+            Файл auth.js восстановлен и глобальный AuthService создан.
         </div>
         
         <div id="status" class="status info">
@@ -77,8 +76,8 @@
         </div>
         
         <div>
-            <button onclick="testNewAuth()">🔧 Тест new-auth.js</button>
-            <button onclick="testAuthService()">🚀 Тест AuthService</button>
+            <button onclick="testAuthService()">🔧 Тест AuthService</button>
+            <button onclick="testInitialization()">🚀 Тест инициализации</button>
             <button onclick="testAuthState()">🔑 Тест состояния авторизации</button>
             <button onclick="clearLog()">🗑️ Очистить лог</button>
         </div>
@@ -99,13 +98,13 @@
                 
                 // Проверяем наличие AuthService
                 if (typeof window.authService !== 'undefined') {
-                    log('✅ window.authService найден (из new-auth.js)');
+                    log('✅ window.authService найден');
                     
                     // Инициализируем глобальный сервис авторизации
                     const initialized = await window.authService.initialize(config);
                     
                     if (initialized) {
-                        updateStatus('✅ AuthService инициализирован (new-auth.js)', 'success');
+                        updateStatus('✅ AuthService инициализирован', 'success');
                         authService = window.authService;
                         log('✅ AuthService готов к работе');
                     } else {
@@ -114,7 +113,7 @@
                     }
                 } else {
                     updateStatus('❌ window.authService не найден', 'error');
-                    log('❌ window.authService не найден - файл new-auth.js не загружен');
+                    log('❌ window.authService не найден - файл auth.js не загружен');
                 }
                 
             } catch (error) {
@@ -140,8 +139,8 @@
             document.getElementById('log').innerHTML = '';
         }
         
-        function testNewAuth() {
-            log('🔧 Тестирование new-auth.js...');
+        function testAuthService() {
+            log('🔧 Тестирование AuthService...');
             
             try {
                 if (typeof window.authService === 'undefined') {
@@ -164,15 +163,13 @@
                     }
                 });
                 
-                log('✅ new-auth.js работает корректно!');
-                
             } catch (error) {
-                log('❌ Ошибка в тесте new-auth.js: ' + error.message);
+                log('❌ Ошибка в тесте AuthService: ' + error.message);
             }
         }
         
-        function testAuthService() {
-            log('🚀 Тестирование AuthService...');
+        function testInitialization() {
+            log('🚀 Тестирование инициализации...');
             
             try {
                 if (!window.authService) {
@@ -188,10 +185,8 @@
                     log(`auth.isSignedIn: ${window.authService.auth.isSignedIn}`);
                 }
                 
-                log('✅ AuthService работает корректно!');
-                
             } catch (error) {
-                log('❌ Ошибка в тесте AuthService: ' + error.message);
+                log('❌ Ошибка в тесте инициализации: ' + error.message);
             }
         }
         
@@ -231,8 +226,6 @@
                         log(`  - localStorage error: ${error.message}`);
                     }
                 }
-                
-                log('✅ Состояние авторизации проверено!');
                 
             } catch (error) {
                 log('❌ Ошибка в тесте состояния: ' + error.message);

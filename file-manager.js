@@ -70,10 +70,10 @@ class FileManager {
             
             console.log('✅ Авторизация подтверждена для FileManager');
             
-            // Получаем список файлов
+            // Получаем список JSON файлов
             const result = await this.drive.getFiles({
                 mimeType: 'application/json',
-                folderOnly: true,
+                folderOnly: false, // Ищем файлы, а не папки
                 pageSize: options.pageSize || 50
             });
 
@@ -144,7 +144,8 @@ class FileManager {
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>📁 Выберите файлы оценок</h3>
+                    <h3>📁 Выберите файл оценки</h3>
+                    <p style="margin: 5px 0; color: #666; font-size: 14px;">Выберите один JSON файл для загрузки данных</p>
                     <button class="btn-close" onclick="fileManager.closeFileSelector()">❌</button>
                 </div>
                 
@@ -157,7 +158,7 @@ class FileManager {
                 
                 <div class="modal-footer">
                     <div class="selected-info">
-                        Выбрано: <span id="selected-count">0</span> файлов
+                        Выбран: <span id="selected-count">0</span> файл
                     </div>
                     <div class="modal-actions">
                         <button class="btn-secondary" onclick="fileManager.closeFileSelector()">
@@ -166,7 +167,7 @@ class FileManager {
                         <button class="btn-primary" 
                                 onclick="fileManager.confirmSelection()"
                                 disabled>
-                            Добавить выбранные
+                            Загрузить выбранный
                         </button>
                     </div>
                 </div>
@@ -351,20 +352,24 @@ class FileManager {
     }
 
     /**
-     * Переключение выбора файла
+     * Переключение выбора файла (только один файл)
      */
     toggleFileSelection(fileId) {
-        const index = this.selectedFiles.indexOf(fileId);
-        if (index > -1) {
-            this.selectedFiles.splice(index, 1);
-        } else {
-            this.selectedFiles.push(fileId);
-        }
+        // Очищаем предыдущий выбор
+        this.selectedFiles = [];
+        
+        // Снимаем выделение со всех файлов
+        document.querySelectorAll('.file-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        
+        // Выбираем новый файл
+        this.selectedFiles.push(fileId);
         
         // Обновляем UI
         const fileItem = document.querySelector(`[data-file-id="${fileId}"]`);
         if (fileItem) {
-            fileItem.classList.toggle('selected', this.selectedFiles.includes(fileId));
+            fileItem.classList.add('selected');
         }
         
         this.updateSelectedCount();
