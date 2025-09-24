@@ -393,6 +393,7 @@
                             </p>
                             <button id="load-from-drive" class="drive-import-button" disabled> 📥  Загрузить файл оценки</button>
                             <button id="save-to-drive" class="drive-export-button" disabled> 📤  Сохранить файл оценки</button>
+                            <button id="sign-out" class="drive-export-button" style="background: linear-gradient(135deg, #f56565, #e53e3e);" onclick="signOut()"> 👋  Выйти из системы</button>
                         </div>
                     </div>
                 </div>
@@ -1203,6 +1204,14 @@
         // Функции для работы с Google Drive
         async function loadFromGoogleDrive() {
             try {
+                // Проверяем, авторизован ли пользователь
+                if (!window.authService.isSignedIn()) {
+                    showNotification('Необходимо авторизоваться в Google для загрузки файлов', 'warning');
+                    // Перенаправляем на страницу авторизации
+                    window.location.href = 'instructions.html';
+                    return;
+                }
+
                 if (!fileManager) {
                     showNotification('Система файлов не инициализирована', 'error');
                     return;
@@ -1220,6 +1229,14 @@
         // Функция сохранения оценки в Google Drive
         async function saveEvaluationToDrive() {
             try {
+                // Проверяем, авторизован ли пользователь
+                if (!window.authService.isSignedIn()) {
+                    showNotification('Необходимо авторизоваться в Google для сохранения файлов', 'warning');
+                    // Перенаправляем на страницу авторизации
+                    window.location.href = 'instructions.html';
+                    return;
+                }
+
                 const developerSelect = document.getElementById('developer-profile');
                 if (!developerSelect.value) {
                     showNotification('Сначала выберите разработчика', 'error');
@@ -1401,15 +1418,30 @@
                 // Получаем экземпляр авторизации
                 const auth = window.authService.getAuth();
                 
-                // Проверяем, авторизован ли пользователь
-                if (window.authService.isSignedIn()) {
-                    console.log('👤 Пользователь уже авторизован');
+                // Проверяем состояние авторизации с повторными попытками
+                let isAuthorized = false;
+                for (let i = 0; i < 5; i++) {
+                    if (window.authService.isSignedIn()) {
+                        isAuthorized = true;
+                        break;
+                    }
+                    console.log(`⏳ Попытка ${i + 1}/5: ожидание восстановления состояния авторизации...`);
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+                if (isAuthorized) {
+                    console.log('👤 Пользователь авторизован');
                     const user = window.authService.getUser();
                     const userName = user ? (user.name || user.getBasicProfile().getName()) : 'Пользователь';
                     showNotification('Авторизован: ' + userName, 'success');
                 } else {
-                    console.log('⚠️ Пользователь не авторизован');
+                    console.log('⚠️ Пользователь не авторизован - перенаправление на страницу авторизации');
                     showNotification('Необходимо авторизоваться в Google', 'warning');
+                    // Перенаправляем на страницу авторизации
+                    setTimeout(() => {
+                        window.location.href = 'instructions.html';
+                    }, 2000);
+                    return;
                 }
                 
                 // Подписываемся на события авторизации
@@ -1535,6 +1567,21 @@
             
             if (evaluationInfo) {
                 evaluationInfo.style.display = 'block';
+            }
+        }
+
+        // Функция выхода из системы
+        async function signOut() {
+            try {
+                await window.authService.signOut();
+                showNotification('Вы вышли из системы', 'info');
+                // Перенаправляем на страницу авторизации
+                setTimeout(() => {
+                    window.location.href = 'instructions.html';
+                }, 1500);
+            } catch (error) {
+                console.error('Ошибка при выходе из системы:', error);
+                showNotification('Ошибка при выходе из системы: ' + error.message, 'error');
             }
         }
     </script>

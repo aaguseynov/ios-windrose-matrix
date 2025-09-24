@@ -91,7 +91,7 @@ class GoogleAuth {
                         this.handleCredentialResponse(response);
                     },
                     auto_select: false,
-                    cancel_on_tap_outside: false,
+                    cancel_on_tap_outside: true,
                     scope: this.scope
                 });
                 
@@ -349,6 +349,9 @@ class GoogleAuth {
      */
     async signOut() {
         try {
+            // Закрываем popup авторизации
+            this.closeGoogleAuthPopup();
+            
             if (window.google && window.google.accounts) {
                 google.accounts.id.disableAutoSelect();
             }
@@ -383,8 +386,40 @@ class GoogleAuth {
      */
     handleAuthSuccess() {
         this.hideLoadingIndicator();
+        
+        // Закрываем popup Google Identity Services
+        this.closeGoogleAuthPopup();
+        
         if (this.onAuthSuccess) {
             this.onAuthSuccess(this.user);
+        }
+    }
+
+    /**
+     * Закрытие popup авторизации Google
+     */
+    closeGoogleAuthPopup() {
+        try {
+            // Закрываем popup Google Identity Services
+            if (window.google && window.google.accounts) {
+                google.accounts.id.cancel();
+                console.log('✅ Popup авторизации Google закрыт');
+            }
+            
+            // Скрываем контейнер кнопки авторизации
+            const buttonContainer = document.getElementById('google-signin-button');
+            if (buttonContainer) {
+                buttonContainer.style.display = 'none';
+                console.log('✅ Контейнер кнопки авторизации скрыт');
+            }
+            
+            // Очищаем содержимое контейнера
+            if (buttonContainer) {
+                buttonContainer.innerHTML = '';
+            }
+            
+        } catch (error) {
+            console.error('❌ Ошибка при закрытии popup авторизации:', error);
         }
     }
 
@@ -395,13 +430,20 @@ class GoogleAuth {
         this.hideLoadingIndicator();
         
         let message = 'Ошибка авторизации';
+        let shouldClosePopup = true;
         
         if (error.message && error.message.includes('отменена пользователем')) {
             message = 'Авторизация отменена пользователем';
+            shouldClosePopup = false; // Не закрываем popup при отмене пользователем
         } else if (error.message && error.message.includes('Client ID не настроен')) {
             message = 'Client ID не настроен. Проверьте настройки Google API';
         } else {
             message = error.message || message;
+        }
+
+        // Закрываем popup только если это не отмена пользователем
+        if (shouldClosePopup) {
+            this.closeGoogleAuthPopup();
         }
 
         if (this.onAuthError) {
@@ -590,28 +632,36 @@ class GoogleAuth {
         if (this.restoreAuthState()) {
             console.log('👤 Найдена существующая авторизация');
             
-            // Проверяем, что токен еще действителен
+            // Если у нас есть токен, считаем пользователя авторизованным
+            // Проверка токена может быть медленной и не всегда нужна
+            if (this.accessToken) {
+                console.log('✅ Токен найден, пользователь авторизован');
+                this.isSignedIn = true;
+                return true;
+            }
+            
+            // Дополнительная проверка токена (опционально)
             try {
-                // Простой тест токена
-                const response = await fetch('https://www.googleapis.com/oauth2/v1/userinfo?access_token=' + this.accessToken);
-                if (response.ok) {
-                    this.handleAuthSuccess();
-                    return true;
-                } else {
-                    console.log('⚠️ Токен недействителен, очищаем состояние');
-                    this.clearAuthState();
-                    this.isSignedIn = false;
-                    this.user = null;
-                    this.accessToken = null;
-                    this.credential = null;
+                if (this.accessToken) {
+                    const response = await fetch('https://www.googleapis.com/oauth2/v1/userinfo?access_token=' + this.accessToken);
+                    if (response.ok) {
+                        console.log('✅ Токен действителен');
+                        this.isSignedIn = true;
+                        return true;
+                    } else {
+                        console.log('⚠️ Токен недействителен, очищаем состояние');
+                        this.clearAuthState();
+                        this.isSignedIn = false;
+                        this.user = null;
+                        this.accessToken = null;
+                        this.credential = null;
+                    }
                 }
             } catch (error) {
-                console.log('⚠️ Ошибка проверки токена, очищаем состояние');
-                this.clearAuthState();
-                this.isSignedIn = false;
-                this.user = null;
-                this.accessToken = null;
-                this.credential = null;
+                console.log('⚠️ Ошибка проверки токена, но оставляем состояние как есть');
+                // Не очищаем состояние при ошибке сети
+                this.isSignedIn = true;
+                return true;
             }
         }
         return false;

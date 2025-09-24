@@ -466,7 +466,10 @@
             
             // Обновляем обработчик кнопки
             startBtn.onclick = function() {
-                window.location.href = 'evaluation.html';
+                // Даем время для сохранения состояния
+                setTimeout(() => {
+                    window.location.href = 'evaluation.html';
+                }, 300);
             };
             
             // Добавляем дополнительную информацию
