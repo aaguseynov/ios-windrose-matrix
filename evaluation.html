@@ -1205,12 +1205,15 @@
         async function loadFromGoogleDrive() {
             try {
                 // Проверяем, авторизован ли пользователь
-                if (!window.authService.isSignedIn()) {
+                const authStatus = checkAuthStatus();
+                if (!authStatus.isSignedIn) {
                     showNotification('Необходимо авторизоваться в Google для загрузки файлов', 'warning');
                     // Перенаправляем на страницу авторизации
                     window.location.href = 'instructions.html';
                     return;
                 }
+                
+                console.log('✅ Авторизация подтверждена для загрузки файлов');
 
                 if (!fileManager) {
                     showNotification('Система файлов не инициализирована', 'error');
@@ -1230,12 +1233,15 @@
         async function saveEvaluationToDrive() {
             try {
                 // Проверяем, авторизован ли пользователь
-                if (!window.authService.isSignedIn()) {
+                const authStatus = checkAuthStatus();
+                if (!authStatus.isSignedIn) {
                     showNotification('Необходимо авторизоваться в Google для сохранения файлов', 'warning');
                     // Перенаправляем на страницу авторизации
                     window.location.href = 'instructions.html';
                     return;
                 }
+                
+                console.log('✅ Авторизация подтверждена для сохранения файлов');
 
                 const developerSelect = document.getElementById('developer-profile');
                 if (!developerSelect.value) {
@@ -1415,25 +1421,60 @@
                     throw new Error('Не удалось инициализировать глобальный сервис авторизации');
                 }
                 
+                // Дополнительная отладка состояния
+                console.log('🔍 Состояние после инициализации:', {
+                    isSignedIn: window.authService.isSignedIn(),
+                    hasUser: !!window.authService.getUser(),
+                    hasToken: !!window.authService.getAccessToken(),
+                    localStorage: localStorage.getItem('google_auth_state') ? 'есть' : 'нет'
+                });
+                
                 // Получаем экземпляр авторизации
                 const auth = window.authService.getAuth();
                 
                 // Проверяем состояние авторизации с повторными попытками
                 let isAuthorized = false;
                 for (let i = 0; i < 5; i++) {
-                    if (window.authService.isSignedIn()) {
+                    const authStatus = window.authService.isSignedIn();
+                    const user = window.authService.getUser();
+                    const token = window.authService.getAccessToken();
+                    
+                    console.log(`⏳ Попытка ${i + 1}/5:`, {
+                        isSignedIn: authStatus,
+                        hasUser: !!user,
+                        hasToken: !!token,
+                        localStorage: localStorage.getItem('google_auth_state') ? 'есть' : 'нет'
+                    });
+                    
+                    if (authStatus) {
                         isAuthorized = true;
                         break;
                     }
-                    console.log(`⏳ Попытка ${i + 1}/5: ожидание восстановления состояния авторизации...`);
                     await new Promise(resolve => setTimeout(resolve, 200));
                 }
                 
                 if (isAuthorized) {
                     console.log('👤 Пользователь авторизован');
-                    const user = window.authService.getUser();
-                    const userName = user ? (user.name || user.getBasicProfile().getName()) : 'Пользователь';
+                    const userName = window.authService.getUserName();
                     showNotification('Авторизован: ' + userName, 'success');
+                    
+                    // Дополнительная проверка через 2 секунды
+                    setTimeout(() => {
+                        const stillAuthorized = window.authService.isSignedIn();
+                        console.log('🔍 Проверка авторизации через 2 сек:', {
+                            stillAuthorized: stillAuthorized,
+                            hasUser: !!window.authService.getUser(),
+                            hasToken: !!window.authService.getAccessToken()
+                        });
+                        
+                        if (!stillAuthorized) {
+                            console.error('❌ Состояние авторизации потеряно!');
+                            showNotification('❌ Состояние авторизации потеряно. Перенаправление...', 'error');
+                            setTimeout(() => {
+                                window.location.href = 'instructions.html';
+                            }, 2000);
+                        }
+                    }, 2000);
                 } else {
                     console.log('⚠️ Пользователь не авторизован - перенаправление на страницу авторизации');
                     showNotification('Необходимо авторизоваться в Google', 'warning');
@@ -1446,8 +1487,8 @@
                 
                 // Подписываемся на события авторизации
                 window.authService.onAuthSuccess(function(user) {
-                    console.log('✅ Авторизация успешна:', user ? user.name || user.getBasicProfile().getName() : 'Демо-режим');
-                    const userName = user ? (user.name || user.getBasicProfile().getName()) : 'Пользователь';
+                    console.log('✅ Авторизация успешна:', user);
+                    const userName = window.authService.getUserName();
                     showNotification('Авторизован: ' + userName, 'success');
                 });
                 
@@ -1584,6 +1625,30 @@
                 showNotification('Ошибка при выходе из системы: ' + error.message, 'error');
             }
         }
+
+        // Глобальная функция проверки авторизации
+        function checkAuthStatus() {
+            const isSignedIn = window.authService.isSignedIn();
+            const user = window.authService.getUser();
+            const token = window.authService.getAccessToken();
+            
+            console.log('🔍 Текущий статус авторизации:', {
+                isSignedIn: isSignedIn,
+                hasUser: !!user,
+                hasToken: !!token,
+                userName: window.authService.getUserName()
+            });
+            
+            return {
+                isSignedIn: isSignedIn,
+                user: user,
+                token: token,
+                userName: window.authService.getUserName()
+            };
+        }
+
+        // Экспортируем функцию для использования в консоли
+        window.checkAuthStatus = checkAuthStatus;
     </script>
 </body>
 </html>

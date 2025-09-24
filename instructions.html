@@ -417,8 +417,7 @@
                     
                     // Проверяем, авторизован ли пользователь
                     if (window.authService.isSignedIn()) {
-                        const user = window.authService.getUser();
-                        const userName = user ? (user.name || user.getBasicProfile().getName()) : 'Пользователь';
+                        const userName = window.authService.getUserName();
                         updateAuthStatus('✅ Авторизован: ' + userName + '. Теперь можете начать оценку!');
                         showStartButton();
                     }
@@ -429,10 +428,25 @@
                 
                 // Подписываемся на события авторизации
                 window.authService.onAuthSuccess(function(user) {
-                    console.log('✅ Авторизация успешна:', user ? user.name || user.getBasicProfile().getName() : 'Демо-режим');
-                    const userName = user ? (user.name || user.getBasicProfile().getName()) : 'Пользователь';
-                    updateAuthStatus('✅ Авторизован: ' + userName + '. Теперь можете начать оценку!');
-                    showStartButton();
+                    console.log('✅ Авторизация успешна:', user);
+                    const userName = window.authService.getUserName();
+                    
+                    // Дополнительная проверка состояния
+                    setTimeout(() => {
+                        const isStillSignedIn = window.authService.isSignedIn();
+                        console.log('🔍 Проверка состояния через 1 сек:', {
+                            isSignedIn: isStillSignedIn,
+                            hasUser: !!window.authService.getUser(),
+                            hasToken: !!window.authService.getAccessToken()
+                        });
+                        
+                        if (isStillSignedIn) {
+                            updateAuthStatus('✅ Авторизован: ' + userName + '. Теперь можете начать оценку!');
+                            showStartButton();
+                        } else {
+                            updateAuthStatus('❌ Ошибка: состояние авторизации потеряно');
+                        }
+                    }, 1000);
                 });
                 
                 window.authService.onAuthError(function(message) {

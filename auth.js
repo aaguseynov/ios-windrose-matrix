@@ -106,7 +106,7 @@ class GoogleAuth {
     /**
      * Обработка ответа с учетными данными
      */
-    handleCredentialResponse(response) {
+    async handleCredentialResponse(response) {
         try {
             console.log('🔐 Получены учетные данные от Google');
             
@@ -132,7 +132,10 @@ class GoogleAuth {
             this.saveAuthState();
             
             // Получаем токен доступа для Google Drive API
-            this.getAccessTokenForDrive();
+            await this.getAccessTokenForDrive();
+            
+            // Вызываем успешную авторизацию только после получения токена
+            this.handleAuthSuccess();
             
         } catch (error) {
             console.error('❌ Ошибка обработки учетных данных:', error);
@@ -190,7 +193,7 @@ class GoogleAuth {
                 await this.getTokenFromGoogleIdentityServices();
             }
             
-            this.handleAuthSuccess();
+            // handleAuthSuccess() вызывается в handleCredentialResponse
             
         } catch (error) {
             console.error('❌ Ошибка получения токена доступа:', error);
@@ -217,12 +220,12 @@ class GoogleAuth {
                         if (response.access_token) {
                             this.accessToken = response.access_token;
                             console.log('✅ Токен получен через Google Identity Services');
-                            this.handleAuthSuccess();
+                            // handleAuthSuccess() вызывается в handleCredentialResponse
                         } else {
                             console.error('❌ Токен не получен через Google Identity Services');
                             // Используем credential как fallback
                             this.accessToken = this.credential;
-                            this.handleAuthSuccess();
+                            // handleAuthSuccess() вызывается в handleCredentialResponse
                         }
                     }
                 }).requestAccessToken();
@@ -231,20 +234,20 @@ class GoogleAuth {
                 if (!this.accessToken) {
                     this.accessToken = this.credential;
                     console.log('⚠️ Используем credential напрямую');
-                    this.handleAuthSuccess();
+                    // handleAuthSuccess() вызывается в handleCredentialResponse
                 }
             } else {
                 // Используем credential как fallback
                 this.accessToken = this.credential;
                 console.log('⚠️ Google Identity Services недоступны, используем credential');
-                this.handleAuthSuccess();
+                // handleAuthSuccess() вызывается в handleCredentialResponse
             }
         } catch (error) {
             console.error('❌ Ошибка получения токена через Google Identity Services:', error);
             // Используем credential как fallback
             this.accessToken = this.credential;
             console.log('⚠️ Используем credential как fallback');
-            this.handleAuthSuccess();
+            // handleAuthSuccess() вызывается в handleCredentialResponse
         }
     }
 
@@ -387,8 +390,18 @@ class GoogleAuth {
     handleAuthSuccess() {
         this.hideLoadingIndicator();
         
+        // Убеждаемся, что состояние сохранено
+        this.saveAuthState();
+        
         // Закрываем popup Google Identity Services
         this.closeGoogleAuthPopup();
+        
+        console.log('✅ Авторизация успешно завершена:', {
+            isSignedIn: this.isSignedIn,
+            hasUser: !!this.user,
+            hasToken: !!this.accessToken,
+            hasCredential: !!this.credential
+        });
         
         if (this.onAuthSuccess) {
             this.onAuthSuccess(this.user);
@@ -562,16 +575,39 @@ class GoogleAuth {
      */
     saveAuthState() {
         try {
+            // Извлекаем только нужные данные пользователя для сериализации
+            let userData = null;
+            if (this.user) {
+                if (this.user.getBasicProfile) {
+                    const profile = this.user.getBasicProfile();
+                    userData = {
+                        id: this.user.id || profile.getId(),
+                        name: profile.getName(),
+                        email: profile.getEmail(),
+                        imageUrl: profile.getImageUrl(),
+                        type: 'google_profile'
+                    };
+                } else if (this.user.name) {
+                    userData = {
+                        id: this.user.id,
+                        name: this.user.name,
+                        email: this.user.email,
+                        imageUrl: this.user.picture,
+                        type: 'user_object'
+                    };
+                }
+            }
+
             const authState = {
                 isSignedIn: this.isSignedIn,
-                user: this.user,
+                user: userData,
                 accessToken: this.accessToken,
                 credential: this.credential,
                 timestamp: Date.now()
             };
             
             localStorage.setItem('google_auth_state', JSON.stringify(authState));
-            console.log('💾 Состояние авторизации сохранено');
+            console.log('💾 Состояние авторизации сохранено:', authState);
         } catch (error) {
             console.error('❌ Ошибка сохранения состояния:', error);
         }
@@ -600,11 +636,16 @@ class GoogleAuth {
             }
 
             this.isSignedIn = authState.isSignedIn;
-            this.user = authState.user;
+            this.user = authState.user; // Теперь это сериализованный объект
             this.accessToken = authState.accessToken;
             this.credential = authState.credential;
             
-            console.log('✅ Состояние авторизации восстановлено');
+            console.log('✅ Состояние авторизации восстановлено:', {
+                isSignedIn: this.isSignedIn,
+                hasUser: !!this.user,
+                hasToken: !!this.accessToken,
+                hasCredential: !!this.credential
+            });
             return true;
         } catch (error) {
             console.error('❌ Ошибка восстановления состояния:', error);
@@ -759,6 +800,21 @@ class AuthService {
      */
     getUser() {
         return this.auth ? this.auth.user : null;
+    }
+
+    /**
+     * Получить имя пользователя
+     */
+    getUserName() {
+        if (!this.auth || !this.auth.user) return 'Пользователь';
+        
+        const user = this.auth.user;
+        if (user.name) {
+            return user.name;
+        } else if (user.getBasicProfile) {
+            return user.getBasicProfile().getName();
+        }
+        return 'Пользователь';
     }
 
     /**
