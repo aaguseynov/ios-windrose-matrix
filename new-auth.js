@@ -171,7 +171,7 @@ class GoogleAuth {
             try {
                 const tokenClient = window.google.accounts.oauth2.initTokenClient({
                     client_id: this.clientId,
-                    scope: 'https://www.googleapis.com/auth/drive.file',
+                    scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
                     callback: (response) => {
                         if (response.access_token) {
                             console.log('✅ Токен получен через Google Identity Services');

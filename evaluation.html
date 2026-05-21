@@ -6,6 +6,7 @@
     <title>iOS Windrose Матрица: Middle → Senior+</title>
                 <script src="https://aaguseynov.github.io/ios-windrose-matrix/env-vars.js"></script>
     <script src="config.js"></script>
+    <script src="scoring.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="new-auth.js"></script>
     <script src="drive.js"></script>
@@ -122,6 +123,94 @@
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
         }
 
+        .evaluation-input[data-type="self"],
+        .evaluation-input[data-type="manager"] {
+            width: 60px;
+        }
+
+        .skill-comments-row td {
+            background: #f8fafc;
+            padding: 16px 12px 12px;
+            border-bottom: none;
+        }
+
+        .skill-manager-comments-row {
+            display: none;
+        }
+
+        body.role-colleague .skill-manager-comments-row {
+            display: table-row;
+        }
+
+        .skill-manager-comments-row td {
+            background: #f0fff4;
+            padding: 12px 12px 20px;
+            border-bottom: 2px solid #cbd5e0;
+        }
+
+        .skill-comments-label {
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .manager-comments-label {
+            color: #276749;
+        }
+
+        body.role-colleague .skill-comments-row .comment-input {
+            background: #edf2f7;
+            cursor: default;
+        }
+
+        .skill-comments-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+        }
+
+        @media (min-width: 1100px) {
+            .skill-comments-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .comment-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .comment-level {
+            font-size: 12px;
+            font-weight: 700;
+            align-self: flex-start;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .comment-input {
+            width: 100%;
+            min-height: 88px;
+            padding: 10px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.45;
+            text-align: left;
+            font-weight: 400;
+            resize: vertical;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        .comment-input:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.12);
+        }
+
         .summary-section {
             background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
             padding: 30px;
@@ -177,6 +266,62 @@
         .level-m { background: #fed7d7; color: #c53030; }
         .level-s { background: #c6f6d5; color: #38a169; }
         .level-sp { background: #bee3f8; color: #3182ce; }
+
+        .grade-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .grade-badge-lg {
+            display: inline-block;
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+        }
+
+        .grade-summary-box {
+            margin-top: 16px;
+            padding: 20px;
+            background: linear-gradient(135deg, #ebf8ff 0%, #e9d8fd 100%);
+            border-radius: 12px;
+            border: 1px solid #bee3f8;
+        }
+
+        .grade-summary-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 16px 24px;
+            margin-top: 12px;
+        }
+
+        .grade-scale-hint {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 12px;
+            line-height: 1.6;
+        }
+
+        .page-nav {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .page-nav a {
+            color: rgba(255,255,255,0.9);
+            margin: 0 12px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .page-nav a:hover { text-decoration: underline; }
 
         /* Стили для управления профилями */
         .profile-section {
@@ -368,6 +513,10 @@
 <body>
     <div class="container">
         <div class="header">
+            <nav class="page-nav">
+                <a href="index.html">← Главная</a>
+                <a href="report.html">📄 PDF-отчёт</a>
+            </nav>
             <h1>🌹 iOS Windrose Матрица</h1>
             <p>Технические компетенции: Junior → Middle → Senior+</p>
             <div style="margin-top: 15px;">
@@ -415,324 +564,803 @@
             <table class="evaluation-table">
                 <thead>
                     <tr>
-                        <th style="width: 20%">Навык</th>
-                        <th style="width: 8%">Уровень</th>
-                        <th style="width: 45%">Описание</th>
-                        <th style="width: 8%">Самооценка</th>
-                        <th style="width: 8%">Оценка менеджера</th>
-                        <th style="width: 11%">Комментарии</th>
+                        <th style="width: 18%">Навык</th>
+                        <th style="width: 7%">Уровень</th>
+                        <th style="width: 55%">Описание</th>
+                        <th style="width: 10%">Самооценка</th>
+                        <th style="width: 10%">Оценка менеджера</th>
                     </tr>
                 </thead>
                 <tbody>
                     <!-- Проектирование -->
                     <tr>
-                        <td rowspan="4" class="skill-category">Проектирование</td>
+                        <td rowspan="6" class="skill-category">Проектирование</td>
                         <td class="skill-level level-j">J</td>
                         <td class="skill-description">Понимание ООП, базовые паттерны (Singleton, Factory), простые архитектуры</td>
                         <td><input type="number" class="evaluation-input" data-competency="design" data-level="level_0" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="design" data-level="level_0" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="design" data-level="level_0" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-m">M</td>
                         <td class="skill-description">MVC, MVVM, SOLID-принципы, проектирование небольших приложений</td>
                         <td><input type="number" class="evaluation-input" data-competency="design" data-level="level_1" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="design" data-level="level_1" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="design" data-level="level_1" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-s">S</td>
                         <td class="skill-description">Clean Architecture, DDD, проектирование масштабируемых систем</td>
                         <td><input type="number" class="evaluation-input" data-competency="design" data-level="level_2" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="design" data-level="level_2" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="design" data-level="level_2" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-sp">S+</td>
                         <td class="skill-description">Микросервисная архитектура, сложные системные решения, менторство</td>
                         <td><input type="number" class="evaluation-input" data-competency="design" data-level="level_3" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="design" data-level="level_3" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="design" data-level="level_3" data-type="comments" style="width: 100px;"></td>
                     </tr>
+
+                    <tr class="skill-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label">Комментарии разработчика</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="design" data-level="level_0" data-type="comments" rows="4" placeholder="Комментарии по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="design" data-level="level_1" data-type="comments" rows="4" placeholder="Комментарии по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="design" data-level="level_2" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="design" data-level="level_3" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr class="skill-manager-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label manager-comments-label">Комментарии оценивающего</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="design" data-level="level_0" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="design" data-level="level_1" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="design" data-level="level_2" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="design" data-level="level_3" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+
+
+
 
                     <!-- iOS -->
                     <tr>
-                        <td rowspan="4" class="skill-category">iOS</td>
+                        <td rowspan="6" class="skill-category">iOS</td>
                         <td class="skill-level level-j">J</td>
                         <td class="skill-description">Основы Swift, UIKit, простые интерфейсы, жизненный цикл приложения</td>
                         <td><input type="number" class="evaluation-input" data-competency="ios" data-level="level_0" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="ios" data-level="level_0" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="ios" data-level="level_0" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-m">M</td>
                         <td class="skill-description">SwiftUI, CoreData, RESTful API, глубокое понимание жизненного цикла</td>
                         <td><input type="number" class="evaluation-input" data-competency="ios" data-level="level_1" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="ios" data-level="level_1" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="ios" data-level="level_1" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-s">S</td>
                         <td class="skill-description">Оптимизация производительности, Core Graphics, Metal, сложные анимации</td>
                         <td><input type="number" class="evaluation-input" data-competency="ios" data-level="level_2" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="ios" data-level="level_2" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="ios" data-level="level_2" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-sp">S+</td>
                         <td class="skill-description">Низкоуровневые API, кастомные UI компоненты, экспертная оптимизация</td>
                         <td><input type="number" class="evaluation-input" data-competency="ios" data-level="level_3" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="ios" data-level="level_3" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="ios" data-level="level_3" data-type="comments" style="width: 100px;"></td>
                     </tr>
+
+                    <tr class="skill-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label">Комментарии разработчика</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="ios" data-level="level_0" data-type="comments" rows="4" placeholder="Комментарии по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="ios" data-level="level_1" data-type="comments" rows="4" placeholder="Комментарии по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="ios" data-level="level_2" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="ios" data-level="level_3" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr class="skill-manager-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label manager-comments-label">Комментарии оценивающего</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="ios" data-level="level_0" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="ios" data-level="level_1" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="ios" data-level="level_2" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="ios" data-level="level_3" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+
+
+
 
                     <!-- Многопоточность -->
                     <tr>
-                        <td rowspan="4" class="skill-category">Многопоточность</td>
+                        <td rowspan="6" class="skill-category">Многопоточность</td>
                         <td class="skill-level level-j">J</td>
                         <td class="skill-description">Основы многопоточности, GCD для простых фоновых задач</td>
                         <td><input type="number" class="evaluation-input" data-competency="threading" data-level="level_0" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="threading" data-level="level_0" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="threading" data-level="level_0" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-m">M</td>
                         <td class="skill-description">OperationQueue, синхронизация, предотвращение гонок данных</td>
                         <td><input type="number" class="evaluation-input" data-competency="threading" data-level="level_1" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="threading" data-level="level_1" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="threading" data-level="level_1" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-s">S</td>
                         <td class="skill-description">Проектирование многопоточных систем, производительность и безопасность</td>
                         <td><input type="number" class="evaluation-input" data-competency="threading" data-level="level_2" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="threading" data-level="level_2" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="threading" data-level="level_2" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-sp">S+</td>
                         <td class="skill-description">Низкоуровневые инструменты управления потоками, экспертная оптимизация</td>
                         <td><input type="number" class="evaluation-input" data-competency="threading" data-level="level_3" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="threading" data-level="level_3" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="threading" data-level="level_3" data-type="comments" style="width: 100px;"></td>
                     </tr>
+
+                    <tr class="skill-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label">Комментарии разработчика</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="threading" data-level="level_0" data-type="comments" rows="4" placeholder="Комментарии по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="threading" data-level="level_1" data-type="comments" rows="4" placeholder="Комментарии по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="threading" data-level="level_2" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="threading" data-level="level_3" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr class="skill-manager-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label manager-comments-label">Комментарии оценивающего</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="threading" data-level="level_0" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="threading" data-level="level_1" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="threading" data-level="level_2" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="threading" data-level="level_3" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+
+
+
 
                     <!-- Внедрение зависимостей (DI) -->
                     <tr>
-                        <td rowspan="4" class="skill-category">Внедрение зависимостей (DI)</td>
+                        <td rowspan="6" class="skill-category">Внедрение зависимостей (DI)</td>
                         <td class="skill-level level-j">J</td>
                         <td class="skill-description">Понимание принципов DI, простые методы внедрения зависимостей</td>
                         <td><input type="number" class="evaluation-input" data-competency="di" data-level="level_0" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="di" data-level="level_0" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="di" data-level="level_0" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-m">M</td>
                         <td class="skill-description">Swinject и другие DI-фреймворки, управление зависимостями в приложении</td>
                         <td><input type="number" class="evaluation-input" data-competency="di" data-level="level_1" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="di" data-level="level_1" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="di" data-level="level_1" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-s">S</td>
                         <td class="skill-description">Проектирование сложных DI-систем, оптимизация контейнеров</td>
                         <td><input type="number" class="evaluation-input" data-competency="di" data-level="level_2" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="di" data-level="level_2" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="di" data-level="level_2" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-sp">S+</td>
                         <td class="skill-description">Создание собственных DI-решений, архитектурные паттерны с DI</td>
                         <td><input type="number" class="evaluation-input" data-competency="di" data-level="level_3" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="di" data-level="level_3" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="di" data-level="level_3" data-type="comments" style="width: 100px;"></td>
                     </tr>
+
+                    <tr class="skill-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label">Комментарии разработчика</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="di" data-level="level_0" data-type="comments" rows="4" placeholder="Комментарии по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="di" data-level="level_1" data-type="comments" rows="4" placeholder="Комментарии по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="di" data-level="level_2" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="di" data-level="level_3" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr class="skill-manager-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label manager-comments-label">Комментарии оценивающего</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="di" data-level="level_0" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="di" data-level="level_1" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="di" data-level="level_2" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="di" data-level="level_3" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+
+
+
 
                     <!-- Тестирование -->
                     <tr>
-                        <td rowspan="4" class="skill-category">Тестирование</td>
+                        <td rowspan="6" class="skill-category">Тестирование</td>
                         <td class="skill-level level-j">J</td>
                         <td class="skill-description">Простые unit-тесты с XCTest, базовое понимание тестирования</td>
                         <td><input type="number" class="evaluation-input" data-competency="testing" data-level="level_0" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="testing" data-level="level_0" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="testing" data-level="level_0" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-m">M</td>
                         <td class="skill-description">Интеграционные тесты, моки и стабы, TDD-подход</td>
                         <td><input type="number" class="evaluation-input" data-competency="testing" data-level="level_1" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="testing" data-level="level_1" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="testing" data-level="level_1" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-s">S</td>
                         <td class="skill-description">UI-тестирование, нагрузочное тестирование, комплексные стратегии</td>
                         <td><input type="number" class="evaluation-input" data-competency="testing" data-level="level_2" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="testing" data-level="level_2" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="testing" data-level="level_2" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-sp">S+</td>
                         <td class="skill-description">Автоматизация тестирования, архитектура тестовых систем, менторство</td>
                         <td><input type="number" class="evaluation-input" data-competency="testing" data-level="level_3" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="testing" data-level="level_3" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="testing" data-level="level_3" data-type="comments" style="width: 100px;"></td>
                     </tr>
+
+                    <tr class="skill-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label">Комментарии разработчика</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="testing" data-level="level_0" data-type="comments" rows="4" placeholder="Комментарии по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="testing" data-level="level_1" data-type="comments" rows="4" placeholder="Комментарии по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="testing" data-level="level_2" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="testing" data-level="level_3" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr class="skill-manager-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label manager-comments-label">Комментарии оценивающего</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="testing" data-level="level_0" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="testing" data-level="level_1" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="testing" data-level="level_2" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="testing" data-level="level_3" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+
+
+
 
                     <!-- Инструменты -->
                     <tr>
-                        <td rowspan="4" class="skill-category">Инструменты</td>
+                        <td rowspan="6" class="skill-category">Инструменты</td>
                         <td class="skill-level level-j">J</td>
                         <td class="skill-description">Xcode, Interface Builder, симуляторы, базовые инструменты разработки</td>
                         <td><input type="number" class="evaluation-input" data-competency="tools" data-level="level_0" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="tools" data-level="level_0" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="tools" data-level="level_0" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-m">M</td>
                         <td class="skill-description">Instruments, CocoaPods/SPM, профилирование, управление зависимостями</td>
                         <td><input type="number" class="evaluation-input" data-competency="tools" data-level="level_1" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="tools" data-level="level_1" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="tools" data-level="level_1" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-s">S</td>
                         <td class="skill-description">CI/CD (Jenkins, GitLab CI), продвинутая работа с Git, ветвление</td>
                         <td><input type="number" class="evaluation-input" data-competency="tools" data-level="level_2" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="tools" data-level="level_2" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="tools" data-level="level_2" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-sp">S+</td>
                         <td class="skill-description">Настройка сложных CI/CD процессов, управление инфраструктурой, менторство</td>
                         <td><input type="number" class="evaluation-input" data-competency="tools" data-level="level_3" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="tools" data-level="level_3" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="tools" data-level="level_3" data-type="comments" style="width: 100px;"></td>
                     </tr>
+
+                    <tr class="skill-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label">Комментарии разработчика</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="tools" data-level="level_0" data-type="comments" rows="4" placeholder="Комментарии по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="tools" data-level="level_1" data-type="comments" rows="4" placeholder="Комментарии по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="tools" data-level="level_2" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="tools" data-level="level_3" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr class="skill-manager-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label manager-comments-label">Комментарии оценивающего</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="tools" data-level="level_0" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="tools" data-level="level_1" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="tools" data-level="level_2" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="tools" data-level="level_3" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+
+
+
 
                     <!-- Знание продукта -->
                     <tr>
-                        <td rowspan="4" class="skill-category">Знание продукта</td>
+                        <td rowspan="6" class="skill-category">Знание продукта</td>
                         <td class="skill-level level-j">J</td>
                         <td class="skill-description">Понимание базовых функций продукта, пользовательских сценариев</td>
                         <td><input type="number" class="evaluation-input" data-competency="product" data-level="level_0" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="product" data-level="level_0" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="product" data-level="level_0" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-m">M</td>
                         <td class="skill-description">Глубокое понимание продукта, знание метрик и KPI, пользовательского опыта</td>
                         <td><input type="number" class="evaluation-input" data-competency="product" data-level="level_1" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="product" data-level="level_1" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="product" data-level="level_1" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-s">S</td>
                         <td class="skill-description">Экспертное знание продукта, понимание бизнес-логики, влияние на продукт</td>
                         <td><input type="number" class="evaluation-input" data-competency="product" data-level="level_2" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="product" data-level="level_2" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="product" data-level="level_2" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-sp">S+</td>
                         <td class="skill-description">Стратегическое понимание продукта, формирование продуктового видения</td>
                         <td><input type="number" class="evaluation-input" data-competency="product" data-level="level_3" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="product" data-level="level_3" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="product" data-level="level_3" data-type="comments" style="width: 100px;"></td>
                     </tr>
+
+                    <tr class="skill-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label">Комментарии разработчика</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="product" data-level="level_0" data-type="comments" rows="4" placeholder="Комментарии по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="product" data-level="level_1" data-type="comments" rows="4" placeholder="Комментарии по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="product" data-level="level_2" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="product" data-level="level_3" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr class="skill-manager-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label manager-comments-label">Комментарии оценивающего</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="product" data-level="level_0" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="product" data-level="level_1" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="product" data-level="level_2" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="product" data-level="level_3" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+
+
+
 
                     <!-- Самостоятельность -->
                     <tr>
-                        <td rowspan="4" class="skill-category">Самостоятельность</td>
+                        <td rowspan="6" class="skill-category">Самостоятельность</td>
                         <td class="skill-level level-j">J</td>
                         <td class="skill-description">Выполнение задач под руководством, обращение за помощью при сложностях</td>
                         <td><input type="number" class="evaluation-input" data-competency="autonomy" data-level="level_0" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="autonomy" data-level="level_0" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="autonomy" data-level="level_0" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-m">M</td>
                         <td class="skill-description">Самостоятельное решение задач средней сложности, планирование работы</td>
                         <td><input type="number" class="evaluation-input" data-competency="autonomy" data-level="level_1" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="autonomy" data-level="level_1" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="autonomy" data-level="level_1" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-s">S</td>
                         <td class="skill-description">Лидерство в технических решениях, менторство команды, инициативность</td>
                         <td><input type="number" class="evaluation-input" data-competency="autonomy" data-level="level_2" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="autonomy" data-level="level_2" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="autonomy" data-level="level_2" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-sp">S+</td>
                         <td class="skill-description">Стратегическое планирование, влияние на техническую культуру компании</td>
                         <td><input type="number" class="evaluation-input" data-competency="autonomy" data-level="level_3" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="autonomy" data-level="level_3" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="autonomy" data-level="level_3" data-type="comments" style="width: 100px;"></td>
                     </tr>
+
+                    <tr class="skill-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label">Комментарии разработчика</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="autonomy" data-level="level_0" data-type="comments" rows="4" placeholder="Комментарии по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="autonomy" data-level="level_1" data-type="comments" rows="4" placeholder="Комментарии по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="autonomy" data-level="level_2" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="autonomy" data-level="level_3" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr class="skill-manager-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label manager-comments-label">Комментарии оценивающего</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="autonomy" data-level="level_0" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="autonomy" data-level="level_1" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="autonomy" data-level="level_2" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="autonomy" data-level="level_3" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+
+
+
 
                     <!-- Качество результата -->
                     <tr>
-                        <td rowspan="4" class="skill-category">Качество результата</td>
+                        <td rowspan="6" class="skill-category">Качество результата</td>
                         <td class="skill-level level-j">J</td>
                         <td class="skill-description">Соблюдение стандартов кода, базовое тестирование, следование гайдлайнам</td>
                         <td><input type="number" class="evaluation-input" data-competency="quality" data-level="level_0" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="quality" data-level="level_0" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="quality" data-level="level_0" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-m">M</td>
                         <td class="skill-description">Высокое качество кода, комплексное тестирование, код-ревью</td>
                         <td><input type="number" class="evaluation-input" data-competency="quality" data-level="level_1" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="quality" data-level="level_1" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="quality" data-level="level_1" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-s">S</td>
                         <td class="skill-description">Экспертное качество решений, архитектурная экспертиза, менторство по качеству</td>
                         <td><input type="number" class="evaluation-input" data-competency="quality" data-level="level_2" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="quality" data-level="level_2" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="quality" data-level="level_2" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-sp">S+</td>
                         <td class="skill-description">Установление стандартов качества, влияние на процессы разработки</td>
                         <td><input type="number" class="evaluation-input" data-competency="quality" data-level="level_3" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="quality" data-level="level_3" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="quality" data-level="level_3" data-type="comments" style="width: 100px;"></td>
                     </tr>
+
+                    <tr class="skill-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label">Комментарии разработчика</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="quality" data-level="level_0" data-type="comments" rows="4" placeholder="Комментарии по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="quality" data-level="level_1" data-type="comments" rows="4" placeholder="Комментарии по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="quality" data-level="level_2" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="quality" data-level="level_3" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr class="skill-manager-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label manager-comments-label">Комментарии оценивающего</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="quality" data-level="level_0" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="quality" data-level="level_1" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="quality" data-level="level_2" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="quality" data-level="level_3" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+
+
+
 
                     <!-- Взаимодействие с командой -->
                     <tr>
-                        <td rowspan="4" class="skill-category">Взаимодействие с командой</td>
+                        <td rowspan="6" class="skill-category">Взаимодействие с командой</td>
                         <td class="skill-level level-j">J</td>
                         <td class="skill-description">Эффективное взаимодействие в команде, конструктивная обратная связь</td>
                         <td><input type="number" class="evaluation-input" data-competency="teamwork" data-level="level_0" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="teamwork" data-level="level_0" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="teamwork" data-level="level_0" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-m">M</td>
                         <td class="skill-description">Участие в архитектурных обсуждениях, представление технических решений</td>
                         <td><input type="number" class="evaluation-input" data-competency="teamwork" data-level="level_1" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="teamwork" data-level="level_1" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="teamwork" data-level="level_1" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-s">S</td>
                         <td class="skill-description">Проведение технических интервью, менторинг, кросс-командное взаимодействие</td>
                         <td><input type="number" class="evaluation-input" data-competency="teamwork" data-level="level_2" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="teamwork" data-level="level_2" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="teamwork" data-level="level_2" data-type="comments" style="width: 100px;"></td>
                     </tr>
                     <tr>
                         <td class="skill-level level-sp">S+</td>
                         <td class="skill-description">Представление компании на конференциях, влияние на техническую стратегию</td>
                         <td><input type="number" class="evaluation-input" data-competency="teamwork" data-level="level_3" data-type="self" min="0" max="3" step="0.5" placeholder="0"></td>
                         <td><input type="number" class="evaluation-input" data-competency="teamwork" data-level="level_3" data-type="manager" min="0" max="3" step="0.5" placeholder="0"></td>
-                        <td><input type="text" class="evaluation-input" data-competency="teamwork" data-level="level_3" data-type="comments" style="width: 100px;"></td>
                     </tr>
+
+                    <tr class="skill-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label">Комментарии разработчика</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="teamwork" data-level="level_0" data-type="comments" rows="4" placeholder="Комментарии по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="teamwork" data-level="level_1" data-type="comments" rows="4" placeholder="Комментарии по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="teamwork" data-level="level_2" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input" data-competency="teamwork" data-level="level_3" data-type="comments" rows="4" placeholder="Комментарии по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr class="skill-manager-comments-row">
+                        <td colspan="4">
+                            <div class="skill-comments-label manager-comments-label">Комментарии оценивающего</div>
+                            <div class="skill-comments-grid">
+                                <div class="comment-field">
+                                    <span class="comment-level level-j">J</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="teamwork" data-level="level_0" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Junior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-m">M</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="teamwork" data-level="level_1" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Middle..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-s">S</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="teamwork" data-level="level_2" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior..."></textarea>
+                                </div>
+                                <div class="comment-field">
+                                    <span class="comment-level level-sp">S+</span>
+                                    <textarea class="evaluation-input comment-input manager-comment-input" data-competency="teamwork" data-level="level_3" data-type="manager-comments" rows="4" placeholder="Комментарий менеджера по уровню Senior+..."></textarea>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+
+
+
                 </tbody>
             </table>
 
@@ -794,7 +1422,7 @@
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: 0%" id="design-progress"></div>
                         </div>
-                        <p>Текущий уровень: <span id="design-current">0.0</span> / Цель: <span id="design-target">3.0</span></p>
+                        <p>Балл: <span id="design-current">0.0</span> / 3.0 <span id="design-grade"></span></p>
                     </div>
                     
                     <div class="summary-card">
@@ -802,7 +1430,7 @@
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: 0%" id="ios-progress"></div>
                         </div>
-                        <p>Текущий уровень: <span id="ios-current">0.0</span> / Цель: <span id="ios-target">3.0</span></p>
+                        <p>Балл: <span id="ios-current">0.0</span> / 3.0 <span id="ios-grade"></span></p>
                     </div>
                     
                     <div class="summary-card">
@@ -810,7 +1438,7 @@
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: 0%" id="threading-progress"></div>
                         </div>
-                        <p>Текущий уровень: <span id="threading-current">0.0</span> / Цель: <span id="threading-target">3.0</span></p>
+                        <p>Балл: <span id="threading-current">0.0</span> / 3.0 <span id="threading-grade"></span></p>
                     </div>
                     
                     <div class="summary-card">
@@ -818,7 +1446,7 @@
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: 0%" id="di-progress"></div>
                         </div>
-                        <p>Текущий уровень: <span id="di-current">0.0</span> / Цель: <span id="di-target">3.0</span></p>
+                        <p>Балл: <span id="di-current">0.0</span> / 3.0 <span id="di-grade"></span></p>
                     </div>
                     
                     <div class="summary-card">
@@ -826,7 +1454,7 @@
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: 0%" id="testing-progress"></div>
                         </div>
-                        <p>Текущий уровень: <span id="testing-current">0.0</span> / Цель: <span id="testing-target">3.0</span></p>
+                        <p>Балл: <span id="testing-current">0.0</span> / 3.0 <span id="testing-grade"></span></p>
                     </div>
                     
                     <div class="summary-card">
@@ -834,7 +1462,7 @@
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: 0%" id="tools-progress"></div>
                         </div>
-                        <p>Текущий уровень: <span id="tools-current">0.0</span> / Цель: <span id="tools-target">3.0</span></p>
+                        <p>Балл: <span id="tools-current">0.0</span> / 3.0 <span id="tools-grade"></span></p>
                     </div>
                     
                     <div class="summary-card">
@@ -842,7 +1470,7 @@
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: 0%" id="product-progress"></div>
                         </div>
-                        <p>Текущий уровень: <span id="product-current">0.0</span> / Цель: <span id="product-target">3.0</span></p>
+                        <p>Балл: <span id="product-current">0.0</span> / 3.0 <span id="product-grade"></span></p>
                     </div>
                     
                     <div class="summary-card">
@@ -850,7 +1478,7 @@
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: 0%" id="autonomy-progress"></div>
                         </div>
-                        <p>Текущий уровень: <span id="autonomy-current">0.0</span> / Цель: <span id="autonomy-target">3.0</span></p>
+                        <p>Балл: <span id="autonomy-current">0.0</span> / 3.0 <span id="autonomy-grade"></span></p>
                     </div>
                     
                     <div class="summary-card">
@@ -858,7 +1486,7 @@
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: 0%" id="quality-progress"></div>
                         </div>
-                        <p>Текущий уровень: <span id="quality-current">0.0</span> / Цель: <span id="quality-target">3.0</span></p>
+                        <p>Балл: <span id="quality-current">0.0</span> / 3.0 <span id="quality-grade"></span></p>
                     </div>
                     
                     <div class="summary-card">
@@ -866,16 +1494,25 @@
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: 0%" id="teamwork-progress"></div>
                         </div>
-                        <p>Текущий уровень: <span id="teamwork-current">0.0</span> / Цель: <span id="teamwork-target">3.0</span></p>
+                        <p>Балл: <span id="teamwork-current">0.0</span> / 3.0 <span id="teamwork-grade"></span></p>
                     </div>
                 </div>
                 
-                <div style="margin-top: 20px; padding: 20px; background: white; border-radius: 8px;">
-                    <h3 style="color: #2d3748; margin-bottom: 10px;">🎯 Общий прогресс</h3>
+                <div class="grade-summary-box">
+                    <h3 style="color: #2d3748; margin-bottom: 10px;">🎯 Общий прогресс и грейд</h3>
                     <div class="progress-bar" style="height: 12px;">
                         <div class="progress-fill" style="width: 0%" id="total-progress"></div>
                     </div>
-                    <p style="margin-top: 10px;">Средний балл: <strong id="total-average">0.0</strong> / 3.0</p>
+                    <div class="grade-summary-row">
+                        <p style="margin:0;">Средний балл: <strong id="total-average">0.0</strong> / 3.0</p>
+                        <p style="margin:0;">Сумма баллов: <strong id="total-sum">0</strong> / <span id="total-sum-max">120</span></p>
+                        <p style="margin:0;" id="score-source-hint">Источник: —</p>
+                        <div id="total-grade-badge"></div>
+                    </div>
+                    <p class="grade-scale-hint" id="grade-scale-hint">
+                        Грейд по среднему баллу: J (0–0.7) · M (0.8–1.7) · S (1.8–2.7) · S+ (2.8–3.0).
+                        В режиме самооценки считаются баллы разработчика; при оценке коллеги — оценка менеджера.
+                    </p>
                 </div>
             </div>
         </div>
@@ -894,26 +1531,19 @@
                 windroseChart.destroy();
             }
 
-            const data = getWindroseData();
+            const role = localStorage.getItem('evaluationRole') || '';
+            const metrics = WindroseScoring.collectMetricsFromDOM(role);
+            const datasetLabel = metrics.scoreSource === 'manager'
+                ? 'Оценка менеджера'
+                : 'Самооценка';
             
             windroseChart = new Chart(ctx, {
                 type: 'radar',
                 data: {
-                    labels: [
-                        'Проектирование',
-                        'iOS', 
-                        'Многопоточность',
-                        'Внедрение зависимостей',
-                        'Тестирование',
-                        'Инструменты',
-                        'Знание продукта',
-                        'Самостоятельность',
-                        'Качество результата',
-                        'Взаимодействие с командой'
-                    ],
+                    labels: metrics.windroseLabels,
                     datasets: [{
-                        label: 'Текущие оценки',
-                        data: data,
+                        label: datasetLabel,
+                        data: metrics.windrosePrimary,
                         backgroundColor: 'rgba(102, 126, 234, 0.2)',
                         borderColor: 'rgba(220, 38, 38, 1)',
                         borderWidth: 3,
@@ -977,147 +1607,38 @@
             });
         }
 
-        function getWindroseData() {
-            console.log('📊 Получаем данные для Windrose диаграммы...');
-            
-            // Используем только data-атрибуты для поиска полей
-            const categories = {
-                design: [], ios: [], threading: [], di: [], testing: [], tools: [], 
-                product: [], autonomy: [], quality: [], teamwork: []
-            };
-            
-            // Получаем все поля самооценки и оценки менеджера
-            const selfEvaluationInputs = document.querySelectorAll('.evaluation-input[data-type="self"]');
-            const managerEvaluationInputs = document.querySelectorAll('.evaluation-input[data-type="manager"]');
-            
-            console.log(`📊 Найдено ${selfEvaluationInputs.length} полей самооценки и ${managerEvaluationInputs.length} полей оценки менеджера для Windrose`);
-            
-            // Собираем данные самооценки
-            selfEvaluationInputs.forEach(input => {
-                const competency = input.dataset.competency;
-                const value = parseFloat(input.value) || 0;
-                
-                if (competency && categories[competency]) {
-                    categories[competency].push(value);
-                    console.log(`📊 Windrose ${competency} (самооценка): ${value}`);
-                } else {
-                    console.warn(`⚠️ Неизвестная компетенция для Windrose: ${competency}`);
-                }
-            });
-            
-            // Собираем данные оценки менеджера
-            managerEvaluationInputs.forEach(input => {
-                const competency = input.dataset.competency;
-                const value = parseFloat(input.value) || 0;
-                
-                if (competency && categories[competency]) {
-                    categories[competency].push(value);
-                    console.log(`📊 Windrose ${competency} (менеджер): ${value}`);
-                } else {
-                    console.warn(`⚠️ Неизвестная компетенция для Windrose: ${competency}`);
-                }
-            });
-            
-            // Вычисляем средние значения для каждой категории (включая и самооценку, и оценку менеджера)
-            return [
-                getAverage(categories.design),
-                getAverage(categories.ios),
-                getAverage(categories.threading),
-                getAverage(categories.di),
-                getAverage(categories.testing),
-                getAverage(categories.tools),
-                getAverage(categories.product),
-                getAverage(categories.autonomy),
-                getAverage(categories.quality),
-                getAverage(categories.teamwork)
-            ];
-        }
-
-        function getAverage(values) {
-            if (values.length === 0) return 0;
-            return values.reduce((a, b) => a + b, 0) / values.length;
-        }
-
-        // Автоматический расчет прогресса
         function calculateProgress() {
-            console.log('📊 Пересчитываем прогресс...');
-            
-            // Используем только data-атрибуты для поиска полей
-            const categories = {
-                design: [], ios: [], threading: [], di: [], testing: [], tools: [],
-                product: [], autonomy: [], quality: [], teamwork: []
-            };
-            
-            // Получаем все поля самооценки и оценки менеджера
-            const selfEvaluationInputs = document.querySelectorAll('.evaluation-input[data-type="self"]');
-            const managerEvaluationInputs = document.querySelectorAll('.evaluation-input[data-type="manager"]');
-            
-            console.log(`📊 Найдено ${selfEvaluationInputs.length} полей самооценки и ${managerEvaluationInputs.length} полей оценки менеджера`);
-            
-            // Собираем данные самооценки
-            selfEvaluationInputs.forEach(input => {
-                const competency = input.dataset.competency;
-                const value = parseFloat(input.value) || 0;
-                
-                if (competency && categories[competency]) {
-                    categories[competency].push(value);
-                    console.log(`📊 ${competency} (самооценка): ${value}`);
-                } else {
-                    console.warn(`⚠️ Неизвестная компетенция: ${competency}`);
-                }
+            const role = localStorage.getItem('evaluationRole') || '';
+            const metrics = WindroseScoring.collectMetricsFromDOM(role);
+
+            WindroseScoring.COMPETENCIES.forEach(({ key }) => {
+                const comp = metrics.competencies[key];
+                const currentEl = document.getElementById(key + '-current');
+                const progressEl = document.getElementById(key + '-progress');
+                const gradeEl = document.getElementById(key + '-grade');
+                if (currentEl) currentEl.textContent = comp.average.toFixed(1);
+                if (progressEl) progressEl.style.width = (comp.average / 3) * 100 + '%';
+                if (gradeEl) gradeEl.innerHTML = WindroseScoring.formatGradeBadge(comp.grade);
             });
-            
-            // Собираем данные оценки менеджера
-            managerEvaluationInputs.forEach(input => {
-                const competency = input.dataset.competency;
-                const value = parseFloat(input.value) || 0;
-                
-                if (competency && categories[competency]) {
-                    categories[competency].push(value);
-                    console.log(`📊 ${competency} (менеджер): ${value}`);
-                } else {
-                    console.warn(`⚠️ Неизвестная компетенция: ${competency}`);
-                }
-            });
-            
-            function updateCategory(name, values) {
-                const avg = values.length ? values.reduce((a, b) => a + b) / values.length : 0;
-                const progress = (avg / 3) * 100;
-                
-                document.getElementById(name + '-current').textContent = avg.toFixed(1);
-                document.getElementById(name + '-progress').style.width = progress + '%';
-                
-                return avg;
+
+            document.getElementById('total-average').textContent = metrics.overallAverage.toFixed(1);
+            document.getElementById('total-sum').textContent = metrics.totalSum.toFixed(1);
+            document.getElementById('total-sum-max').textContent = metrics.maxSum;
+            document.getElementById('total-progress').style.width = metrics.progressPercent + '%';
+            document.getElementById('total-grade-badge').innerHTML =
+                WindroseScoring.formatGradeBadge(metrics.grade, true);
+
+            const sourceHint = document.getElementById('score-source-hint');
+            if (sourceHint) {
+                sourceHint.textContent = metrics.scoreSource === 'manager'
+                    ? 'Источник баллов: оценка менеджера'
+                    : 'Источник баллов: самооценка';
             }
-            
-            const designAvg = updateCategory('design', categories.design);
-            const iosAvg = updateCategory('ios', categories.ios);
-            const threadingAvg = updateCategory('threading', categories.threading);
-            const diAvg = updateCategory('di', categories.di);
-            const testingAvg = updateCategory('testing', categories.testing);
-            const toolsAvg = updateCategory('tools', categories.tools);
-            const productAvg = updateCategory('product', categories.product);
-            const autonomyAvg = updateCategory('autonomy', categories.autonomy);
-            const qualityAvg = updateCategory('quality', categories.quality);
-            const teamworkAvg = updateCategory('teamwork', categories.teamwork);
-            
-            const totalAvg = (designAvg + iosAvg + threadingAvg + diAvg + testingAvg + toolsAvg + 
-                            productAvg + autonomyAvg + qualityAvg + teamworkAvg) / 10;
-            const totalProgress = (totalAvg / 3) * 100;
-            
-            document.getElementById('total-average').textContent = totalAvg.toFixed(1);
-            document.getElementById('total-progress').style.width = totalProgress + '%';
-            
-            console.log('✅ Прогресс пересчитан:', {
-                categories: categories,
-                totalAvg: totalAvg,
-                totalProgress: totalProgress
-            });
-            
-            // Обновляем Windrose диаграмму
+
             if (windroseChart) {
-                const newData = getWindroseData();
-                windroseChart.data.datasets[0].data = newData;
+                const label = metrics.scoreSource === 'manager' ? 'Оценка менеджера' : 'Самооценка';
+                windroseChart.data.datasets[0].label = label;
+                windroseChart.data.datasets[0].data = metrics.windrosePrimary;
                 windroseChart.update();
             }
         }
@@ -1174,6 +1695,46 @@
             });
         }
 
+        function applyEvaluationRole() {
+            const role = localStorage.getItem('evaluationRole') || '';
+            document.body.classList.remove('role-self', 'role-colleague');
+            
+            if (role === 'self') {
+                document.body.classList.add('role-self');
+            } else if (role === 'colleague') {
+                document.body.classList.add('role-colleague');
+            }
+            
+            const selfScores = document.querySelectorAll('.evaluation-input[data-type="self"]');
+            const managerScores = document.querySelectorAll('.evaluation-input[data-type="manager"]');
+            const devComments = document.querySelectorAll('.skill-comments-row .comment-input');
+            const managerComments = document.querySelectorAll('.skill-manager-comments-row .comment-input');
+            
+            selfScores.forEach(input => {
+                const locked = role === 'colleague';
+                input.readOnly = locked;
+                input.disabled = locked;
+            });
+            
+            managerScores.forEach(input => {
+                const locked = role === 'self';
+                input.readOnly = locked;
+                input.disabled = locked;
+            });
+            
+            devComments.forEach(input => {
+                input.readOnly = role === 'colleague';
+            });
+            
+            managerComments.forEach(input => {
+                const editable = role === 'colleague';
+                input.readOnly = !editable;
+                input.disabled = !editable;
+            });
+
+            calculateProgress();
+        }
+
         function updateButtons() {
             const developerSelect = document.getElementById('developer-profile');
             const loadButton = document.getElementById('load-from-drive');
@@ -1189,6 +1750,8 @@
             
             console.log('Выбран разработчик:', selectedDeveloper, 'hasDeveloper:', hasDeveloper, 'evaluationRole:', evaluationRole);
             
+            applyEvaluationRole();
+
             // Включаем кнопки при выборе профиля
             if (hasDeveloper) {
                 loadButton.disabled = false;
@@ -1323,12 +1886,15 @@
         }
 
 
+        function getEvaluationField(competency, level, type) {
+            return document.querySelector(
+                `.evaluation-input[data-competency="${competency}"][data-level="${level}"][data-type="${type}"]`
+            );
+        }
+
         // Сбор данных оценки
         function collectEvaluationData() {
             const developerSelect = document.getElementById('developer-profile');
-            const inputs = document.querySelectorAll('.evaluation-input');
-            
-            // Получаем имя оценщика из Google аккаунта
             const evaluatorName = window.authService?.user?.name || 'Система';
             
             const evaluationData = {
@@ -1339,29 +1905,28 @@
                 competencies: {}
             };
             
-            // Группируем данные по компетенциям
             const competencyNames = [
                 'design', 'ios', 'threading', 'di', 'testing', 'tools',
                 'product', 'autonomy', 'quality', 'teamwork'
             ];
             
-            let inputIndex = 0;
             competencyNames.forEach(compName => {
                 evaluationData.competencies[compName] = {};
                 
-                // Каждая компетенция имеет 4 уровня (J, M, S, S+)
                 for (let level = 0; level < 4; level++) {
-                    const selfEval = parseFloat(inputs[inputIndex * 3]?.value) || 0;
-                    const managerEval = parseFloat(inputs[inputIndex * 3 + 1]?.value) || 0;
-                    const comments = inputs[inputIndex * 3 + 2]?.value || '';
+                    const levelKey = `level_${level}`;
+                    const selfInput = getEvaluationField(compName, levelKey, 'self');
+                    const managerInput = getEvaluationField(compName, levelKey, 'manager');
+                    const commentsInput = getEvaluationField(compName, levelKey, 'comments');
                     
-                    evaluationData.competencies[compName][`level_${level}`] = {
-                        selfEvaluation: selfEval,
-                        managerEvaluation: managerEval,
-                        comments: comments
+                    const managerCommentsInput = getEvaluationField(compName, levelKey, 'manager-comments');
+                    
+                    evaluationData.competencies[compName][levelKey] = {
+                        selfEvaluation: parseFloat(selfInput?.value) || 0,
+                        managerEvaluation: parseFloat(managerInput?.value) || 0,
+                        comments: commentsInput?.value || '',
+                        managerComments: managerCommentsInput?.value || ''
                     };
-                    
-                    inputIndex++;
                 }
             });
             
@@ -1371,23 +1936,23 @@
 
 
 
-        function getCompetencyData(startIndex, endIndex) {
-            const inputs = document.querySelectorAll('.evaluation-input');
+        function getCompetencyData(competency, startLevel, endLevel) {
             const competencyData = {};
             
-            for (let i = startIndex; i <= endIndex; i++) {
-                const inputIndex = i * 3;
-                if (inputIndex < inputs.length) {
-                    const selfEval = parseFloat(inputs[inputIndex].value) || 0;
-                    const managerEval = parseFloat(inputs[inputIndex + 1].value) || 0;
-                    const comments = inputs[inputIndex + 2].value || '';
-                    
-                    competencyData[`level_${i - startIndex}`] = {
-                        selfEvaluation: selfEval,
-                        managerEvaluation: managerEval,
-                        comments: comments
-                    };
-                }
+            for (let level = startLevel; level <= endLevel; level++) {
+                const levelKey = `level_${level}`;
+                const selfInput = getEvaluationField(competency, levelKey, 'self');
+                const managerInput = getEvaluationField(competency, levelKey, 'manager');
+                const commentsInput = getEvaluationField(competency, levelKey, 'comments');
+                
+                const managerCommentsInput = getEvaluationField(competency, levelKey, 'manager-comments');
+                
+                competencyData[levelKey] = {
+                    selfEvaluation: parseFloat(selfInput?.value) || 0,
+                    managerEvaluation: parseFloat(managerInput?.value) || 0,
+                    comments: commentsInput?.value || '',
+                    managerComments: managerCommentsInput?.value || ''
+                };
             }
             
             return competencyData;
@@ -1458,6 +2023,7 @@
             
             // Инициализируем управление профилями
             initializeProfileManagement();
+            applyEvaluationRole();
             
             console.log('✅ Система инициализирована');
         });
@@ -1588,6 +2154,7 @@
                             window.uiManager.loadDataIntoUI(result);
                         }
                         
+                        applyEvaluationRole();
                         showNotification('Файл успешно загружен!', 'success');
                     } catch (error) {
                         console.error('❌ Ошибка загрузки данных:', error);

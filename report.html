@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iOS Windrose — PDF-отчёт</title>
+    <script src="scoring.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .toolbar {
+            max-width: 900px;
+            margin: 0 auto 20px;
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+        }
+
+        .toolbar h1 {
+            color: #1e3c72;
+            font-size: 1.6rem;
+            margin-bottom: 8px;
+        }
+
+        .toolbar p { color: #4a5568; margin-bottom: 16px; line-height: 1.5; }
+
+        .toolbar-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover { transform: translateY(-1px); }
+        .btn-primary { background: linear-gradient(135deg, #3182ce, #2b6cb0); color: white; }
+        .btn-success { background: linear-gradient(135deg, #48bb78, #38a169); color: white; }
+        .btn-secondary { background: #e2e8f0; color: #4a5568; }
+
+        .file-label {
+            display: inline-block;
+            padding: 12px 20px;
+            background: #edf2f7;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .file-label input { display: none; }
+
+        .nav-links { margin-top: 16px; }
+        .nav-links a { color: #3182ce; margin-right: 16px; text-decoration: none; font-weight: 500; }
+
+        #report-empty {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        #report-wrapper { display: none; max-width: 900px; margin: 0 auto; }
+
+        #report-printable {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+        }
+
+        .report-header {
+            text-align: center;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 24px;
+            margin-bottom: 28px;
+        }
+
+        .report-header h2 {
+            font-size: 1.8rem;
+            color: #1e3c72;
+            margin-bottom: 8px;
+        }
+
+        .report-meta {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+            text-align: left;
+            font-size: 14px;
+            color: #4a5568;
+        }
+
+        .grade-hero {
+            text-align: center;
+            margin: 28px 0;
+            padding: 24px;
+            background: linear-gradient(135deg, #f7fafc 0%, #ebf8ff 100%);
+            border-radius: 12px;
+        }
+
+        .grade-hero .grade-badge-lg {
+            display: inline-block;
+            padding: 14px 32px;
+            border-radius: 14px;
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 12px 0;
+        }
+
+        .metrics-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 12px;
+            font-size: 15px;
+            color: #2d3748;
+        }
+
+        .chart-block {
+            margin: 28px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+
+        .chart-block h3 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 16px;
+        }
+
+        .chart-container {
+            max-width: 520px;
+            margin: 0 auto;
+            height: 400px;
+        }
+
+        .comp-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 24px;
+            font-size: 13px;
+        }
+
+        .comp-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .comp-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .comp-table tr:nth-child(even) { background: #f8fafc; }
+
+        .grade-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .report-footer {
+            margin-top: 32px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 12px;
+            color: #718096;
+            text-align: center;
+        }
+
+        .scale-box {
+            margin-top: 20px;
+            padding: 14px;
+            background: #fffaf0;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #744210;
+            line-height: 1.6;
+        }
+
+        .comments-section {
+            margin-top: 32px;
+            page-break-inside: avoid;
+        }
+
+        .comments-section h3 {
+            color: #1e3c72;
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #c6f6d5;
+        }
+
+        .comment-comp-block {
+            margin-bottom: 18px;
+            padding: 14px 16px;
+            background: #f0fff4;
+            border-radius: 10px;
+            border-left: 4px solid #48bb78;
+            page-break-inside: avoid;
+        }
+
+        .comment-comp-title {
+            font-weight: 700;
+            color: #276749;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .comment-level-item {
+            margin-bottom: 10px;
+            padding: 10px 12px;
+            background: white;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #2d3748;
+        }
+
+        .comment-level-item:last-child { margin-bottom: 0; }
+
+        .comment-level-tag {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: #c6f6d5;
+            color: #276749;
+            margin-right: 8px;
+            margin-bottom: 4px;
+        }
+
+        .comment-level-score {
+            font-size: 11px;
+            color: #718096;
+            margin-left: 4px;
+        }
+
+        .comment-empty {
+            color: #a0aec0;
+            font-style: italic;
+            font-size: 13px;
+            padding: 12px;
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .toolbar, #report-empty { display: none !important; }
+            #report-wrapper { display: block !important; max-width: 100%; }
+            #report-printable { box-shadow: none; border-radius: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <h1>📄 PDF-отчёт Windrose</h1>
+        <p>Загрузите JSON-файл итоговой оценки (с Google Диска или локально). Система построит матрицу компетенций, рассчитает грейд и сформирует PDF.</p>
+        <div class="toolbar-actions">
+            <label class="file-label">
+                📂 Выбрать JSON
+                <input type="file" id="file-input" accept=".json,application/json">
+            </label>
+            <button class="btn btn-success" id="btn-pdf" disabled>📥 Скачать PDF</button>
+            <button class="btn btn-secondary" id="btn-print" disabled>🖨️ Печать</button>
+            <a href="evaluation.html" class="btn btn-primary" style="text-decoration:none;display:inline-block;">← К оценке</a>
+        </div>
+        <div class="nav-links">
+            <a href="index.html">Главная</a>
+            <a href="instructions.html">Инструкция</a>
+        </div>
+    </div>
+
+    <div id="report-empty">Загрузите файл оценки, чтобы увидеть отчёт</div>
+
+    <div id="report-wrapper">
+        <div id="report-printable">
+            <div class="report-header">
+                <h2>🌹 iOS Windrose — Отчёт по компетенциям</h2>
+                <div class="report-meta">
+                    <div><strong>Разработчик:</strong> <span id="r-developer">—</span></div>
+                    <div><strong>Оценщик:</strong> <span id="r-evaluator">—</span></div>
+                    <div><strong>Дата:</strong> <span id="r-date">—</span></div>
+                    <div><strong>Статус:</strong> <span id="r-status">—</span></div>
+                </div>
+            </div>
+
+            <div class="grade-hero">
+                <div style="font-size:14px;color:#718096;">Итоговый грейд (по среднему баллу менеджера)</div>
+                <div id="r-grade-badge"></div>
+                <div class="metrics-row">
+                    <span>Средний балл: <strong id="r-avg">0.0</strong> / 3.0</span>
+                    <span>Сумма баллов: <strong id="r-sum">0</strong> / <span id="r-sum-max">120</span></span>
+                </div>
+            </div>
+
+            <div class="chart-block">
+                <h3>Матрица компетенций (Windrose)</h3>
+                <div class="chart-container">
+                    <canvas id="reportChart"></canvas>
+                </div>
+            </div>
+
+            <table class="comp-table">
+                <thead>
+                    <tr>
+                        <th>Компетенция</th>
+                        <th>Средний балл</th>
+                        <th>Сумма (4 ур.)</th>
+                        <th>Грейд</th>
+                        <th>Самооценка (ср.)</th>
+                        <th>Менеджер (ср.)</th>
+                    </tr>
+                </thead>
+                <tbody id="r-table-body"></tbody>
+            </table>
+
+            <div class="comments-section">
+                <h3>💬 Комментарии оценивающего (менеджера)</h3>
+                <div id="r-manager-comments"></div>
+            </div>
+
+            <div class="scale-box">
+                <strong>Как считается грейд:</strong> по каждой компетенции — среднее 4 уровней (J, M, S, S+), балл 0–3.
+                Итоговый грейд — по среднему по всем 10 компетенциям (оценка менеджера): 
+                J (0–0.7), M (0.8–1.7), S (1.8–2.7), S+ (2.8–3.0).
+                Сумма баллов — сложение всех 40 ячеек (макс. 120).
+            </div>
+
+            <div class="report-footer">
+                Сформировано системой iOS Windrose Matrix · <span id="r-generated"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let reportChart = null;
+        let loadedData = null;
+
+        document.getElementById('file-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                renderReport(data);
+            } catch (err) {
+                alert('Ошибка чтения JSON: ' + err.message);
+            }
+        });
+
+        document.getElementById('btn-pdf').addEventListener('click', () => {
+            const el = document.getElementById('report-printable');
+            const name = (loadedData?.developer || 'report') + '_windrose.pdf';
+            html2pdf().set({
+                margin: [10, 10, 10, 10],
+                filename: name,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(el).save();
+        });
+
+        document.getElementById('btn-print').addEventListener('click', () => window.print());
+
+        function renderReport(data) {
+            loadedData = data;
+            const metricsManager = WindroseScoring.computeMetricsFromEvaluation(data, { scoreSource: 'manager' });
+            const metricsSelf = WindroseScoring.computeMetricsFromEvaluation(data, { scoreSource: 'self' });
+
+            document.getElementById('report-empty').style.display = 'none';
+            document.getElementById('report-wrapper').style.display = 'block';
+            document.getElementById('btn-pdf').disabled = false;
+            document.getElementById('btn-print').disabled = false;
+
+            const devName = WindroseScoring.getDeveloperName(data.developer) || data.developerName || data.developer;
+            document.getElementById('r-developer').textContent = devName;
+            document.getElementById('r-evaluator').textContent = data.evaluator || '—';
+            document.getElementById('r-date').textContent = data.date
+                ? new Date(data.date).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' })
+                : '—';
+            document.getElementById('r-status').textContent = data.status === 'completed' ? 'Завершена' : (data.status || '—');
+            document.getElementById('r-generated').textContent = new Date().toLocaleString('ru-RU');
+
+            document.getElementById('r-grade-badge').innerHTML =
+                WindroseScoring.formatGradeBadge(metricsManager.grade, true);
+            document.getElementById('r-avg').textContent = metricsManager.overallAverage.toFixed(2);
+            document.getElementById('r-sum').textContent = metricsManager.totalSum.toFixed(1);
+            document.getElementById('r-sum-max').textContent = metricsManager.maxSum;
+
+            const tbody = document.getElementById('r-table-body');
+            tbody.innerHTML = '';
+            WindroseScoring.COMPETENCIES.forEach(({ key, label, icon }) => {
+                const m = metricsManager.competencies[key];
+                const s = metricsSelf.competencies[key];
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${icon} ${label}</td>
+                    <td><strong>${m.average.toFixed(2)}</strong></td>
+                    <td>${m.sum.toFixed(1)}</td>
+                    <td>${WindroseScoring.formatGradeBadge(m.grade)}</td>
+                    <td>${s.average.toFixed(2)}</td>
+                    <td>${m.average.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            renderManagerComments(data);
+            buildChart(metricsManager, metricsSelf);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function renderManagerComments(data) {
+            const container = document.getElementById('r-manager-comments');
+            const blocks = WindroseScoring.extractManagerComments(data);
+            const withComments = blocks.filter(b => b.items.length > 0);
+
+            if (withComments.length === 0) {
+                container.innerHTML = '<p class="comment-empty">Комментарии менеджера не заполнены в файле оценки.</p>';
+                return;
+            }
+
+            container.innerHTML = withComments.map(block => {
+                const itemsHtml = block.items.map(item => `
+                    <div class="comment-level-item">
+                        <span class="comment-level-tag">${escapeHtml(item.levelLabel)}</span>
+                        <span class="comment-level-score">оценка: ${item.score.toFixed(1)}</span>
+                        <div style="margin-top:6px;">${escapeHtml(item.text)}</div>
+                    </div>
+                `).join('');
+                return `
+                    <div class="comment-comp-block">
+                        <div class="comment-comp-title">${block.icon} ${escapeHtml(block.label)}</div>
+                        ${itemsHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function buildChart(metricsManager, metricsSelf) {
+            const ctx = document.getElementById('reportChart').getContext('2d');
+            if (reportChart) reportChart.destroy();
+
+            reportChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: metricsManager.windroseLabels,
+                    datasets: [
+                        {
+                            label: 'Оценка менеджера',
+                            data: metricsManager.windrosePrimary,
+                            backgroundColor: 'rgba(220, 38, 38, 0.15)',
+                            borderColor: 'rgba(220, 38, 38, 1)',
+                            borderWidth: 2,
+                            pointRadius: 4
+                        },
+                        {
+                            label: 'Самооценка',
+                            data: metricsSelf.windrosePrimary,
+                            backgroundColor: 'rgba(66, 153, 225, 0.12)',
+                            borderColor: 'rgba(66, 153, 225, 1)',
+                            borderWidth: 2,
+                            pointRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ctx.dataset.label + ': ' + ctx.parsed.r.toFixed(2) + ' / 3.0'
+                            }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 3,
+                            ticks: { stepSize: 0.5 }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

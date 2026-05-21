@@ -73,7 +73,7 @@ class GoogleDrive {
                     // Пытаемся получить токен через Google Identity Services
                     const tokenClient = window.google.accounts.oauth2.initTokenClient({
                         client_id: window.authService.auth.clientId,
-                        scope: 'https://www.googleapis.com/auth/drive.file',
+                        scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
                         callback: (response) => {
                             if (response.access_token) {
                                 console.log('✅ Новый токен получен через Google Identity Services');

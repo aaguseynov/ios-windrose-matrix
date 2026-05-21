@@ -38,70 +38,39 @@ class FileManager {
     }
 
     /**
-     * Диагностика конфликтов между FileManager и GoogleDrive
+     * ID общей папки Google Drive (config.folderId, не config.drive.folderId)
+     */
+    getFolderId() {
+        const config = window.config || globalThis.config;
+        return config?.folderId || config?.drive?.folderId || this.drive?.folderId || null;
+    }
+
+    /**
+     * Проверка готовности FileManager и GoogleDrive к работе
      */
     diagnoseConflicts() {
-        console.log('🔍 Диагностика конфликтов FileManager и GoogleDrive...');
+        console.log('🔍 Проверка FileManager и GoogleDrive...');
         
-        // Проверяем наличие GoogleDrive
         if (!this.drive) {
             console.error('❌ GoogleDrive не инициализирован');
             return false;
         }
         
-        // Проверяем методы GoogleDrive
         const requiredMethods = ['getFiles', 'downloadFile', 'getFileInfo', 'getFilesFromFolder', 'showNotification'];
-        const missingMethods = [];
-        
-        requiredMethods.forEach(method => {
-            if (typeof this.drive[method] !== 'function') {
-                missingMethods.push(method);
-            }
-        });
+        const missingMethods = requiredMethods.filter(method => typeof this.drive[method] !== 'function');
         
         if (missingMethods.length > 0) {
             console.error('❌ Отсутствуют методы GoogleDrive:', missingMethods);
             return false;
         }
         
-        // Проверяем конфигурацию
-        const config = window.config || globalThis.config;
-        console.log('🔍 Проверка конфигурации:');
-        console.log('  - window.config:', !!window.config);
-        console.log('  - globalThis.config:', !!globalThis.config);
-        console.log('  - config:', !!config);
-        console.log('  - typeof config:', typeof config);
-        console.log('  - config === null:', config === null);
-        console.log('  - config === undefined:', config === undefined);
-        
-        if (config) {
-            console.log('  - config.drive:', !!config.drive);
-            console.log('  - config.drive.folderId:', config.drive?.folderId);
-        }
-        
-        if (!config || !config.drive || !config.drive.folderId) {
-            console.error('❌ Конфигурация GoogleDrive не найдена');
-            console.log('🔍 Доступные глобальные объекты:', Object.keys(window).filter(k => k.includes('config') || k.includes('Config')));
-            
-            // Дополнительная диагностика
-            if (config) {
-                console.log('📋 Структура config:', Object.keys(config));
-                if (config.drive) {
-                    console.log('📋 Структура config.drive:', Object.keys(config.drive));
-                } else {
-                    console.log('❌ config.drive отсутствует');
-                }
-            } else {
-                console.log('❌ config отсутствует');
-            }
-            
+        const folderId = this.getFolderId();
+        if (!folderId) {
+            console.error('❌ ID папки Google Drive не найден (ожидается config.folderId)');
             return false;
         }
         
-        console.log('✅ GoogleDrive инициализирован корректно');
-        console.log('📁 ID папки:', config.drive.folderId);
-        console.log('🔧 Доступные методы:', Object.getOwnPropertyNames(Object.getPrototypeOf(this.drive)));
-        
+        console.log('✅ GoogleDrive готов, папка:', folderId);
         return true;
     }
 
@@ -112,9 +81,8 @@ class FileManager {
         try {
             console.log('📁 Открытие селектора файлов...');
             
-            // Диагностика конфликтов
             if (!this.diagnoseConflicts()) {
-                throw new Error('Обнаружены конфликты между FileManager и GoogleDrive');
+                throw new Error('Система Google Drive не настроена. Проверьте config.folderId и авторизацию.');
             }
             
             // Проверяем авторизацию
@@ -152,8 +120,7 @@ class FileManager {
             
             // Стратегия 1: Ищем файлы в общей папке (приоритет)
             console.log('🔍 Стратегия 1: Поиск в общей папке...');
-            const config = window.config || globalThis.config;
-            console.log('📁 ID папки из конфигурации:', config?.drive?.folderId);
+            console.log('📁 ID папки из конфигурации:', this.getFolderId());
             let result = await this.drive.getFiles({
                 mimeType: 'application/json',
                 folderOnly: true, // Ищем в конкретной папке

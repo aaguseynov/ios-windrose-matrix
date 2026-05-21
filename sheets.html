@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iOS Windrose — Google Таблица</title>
+    <script src="scoring.js"></script>
+    <script src="sheets-export.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 24px;
+        }
+        .panel {
+            max-width: 960px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+        }
+        h1 { color: #1e3c72; margin-bottom: 8px; }
+        .subtitle { color: #4a5568; margin-bottom: 20px; line-height: 1.5; }
+        .upload-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 700px) { .upload-grid { grid-template-columns: 1fr; } }
+        .upload-box {
+            border: 2px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .upload-box h3 { font-size: 14px; color: #2d3748; margin-bottom: 8px; }
+        .upload-box p { font-size: 12px; color: #718096; margin-bottom: 12px; }
+        .file-label {
+            display: inline-block;
+            padding: 10px 16px;
+            background: #edf2f7;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .file-label input { display: none; }
+        .file-name { font-size: 12px; color: #38a169; margin-top: 8px; word-break: break-all; }
+        .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #3182ce; color: white; }
+        .btn-success { background: #48bb78; color: white; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .preview {
+            overflow-x: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { border: 1px solid #e2e8f0; padding: 10px 12px; text-align: left; vertical-align: top; }
+        th { background: #667eea; color: white; }
+        tr:nth-child(even) { background: #f8fafc; }
+        .summary-cell { white-space: pre-wrap; line-height: 1.55; max-width: 600px; }
+        .nav { margin-top: 20px; }
+        .nav a { color: #3182ce; margin-right: 16px; }
+        #empty-hint { color: #718096; text-align: center; padding: 40px; }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <h1>📊 Экспорт в Google Таблицы</h1>
+        <p class="subtitle">
+            Формат: <strong>Компетенция → Было → Стало</strong> (средний балл менеджера и грейд) + резюме изменений.
+            Загрузите текущую оценку и при необходимости прошлую — скачайте CSV и откройте в Google Sheets (Файл → Импорт).
+        </p>
+
+        <div class="upload-grid">
+            <div class="upload-box">
+                <h3>Текущая оценка (стало)</h3>
+                <p>Обязательный JSON</p>
+                <label class="file-label">📂 Выбрать файл
+                    <input type="file" id="current-file" accept=".json">
+                </label>
+                <div class="file-name" id="current-name">—</div>
+            </div>
+            <div class="upload-box">
+                <h3>Прошлая оценка (было)</h3>
+                <p>Необязательно — для сравнения</p>
+                <label class="file-label">📂 Выбрать файл
+                    <input type="file" id="previous-file" accept=".json">
+                </label>
+                <div class="file-name" id="previous-name">—</div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" id="btn-build" disabled>Собрать таблицу</button>
+            <button class="btn btn-success" id="btn-csv" disabled>📥 Скачать CSV для Google Sheets</button>
+        </div>
+
+        <div id="empty-hint">Загрузите JSON текущей оценки</div>
+        <div class="preview" id="preview" style="display:none;">
+            <table id="preview-table"></table>
+        </div>
+
+        <div class="nav">
+            <a href="index.html">← Главная</a>
+            <a href="report.html">PDF-отчёт</a>
+            <a href="evaluation.html">Оценка</a>
+        </div>
+    </div>
+
+    <script>
+        let currentData = null;
+        let previousData = null;
+        let lastRows = null;
+
+        async function readJson(input) {
+            const file = input.files[0];
+            if (!file) return null;
+            return JSON.parse(await file.text());
+        }
+
+        document.getElementById('current-file').addEventListener('change', async (e) => {
+            try {
+                currentData = await readJson(e.target);
+                document.getElementById('current-name').textContent = e.target.files[0]?.name || '—';
+                document.getElementById('btn-build').disabled = !currentData;
+            } catch (err) {
+                alert('Ошибка JSON: ' + err.message);
+            }
+        });
+
+        document.getElementById('previous-file').addEventListener('change', async (e) => {
+            try {
+                previousData = await readJson(e.target);
+                document.getElementById('previous-name').textContent = e.target.files[0]?.name || '—';
+            } catch (err) {
+                alert('Ошибка JSON: ' + err.message);
+            }
+        });
+
+        document.getElementById('btn-build').addEventListener('click', () => {
+            if (!currentData) return;
+            const { rows, devName } = SheetsExport.buildSheetComparison(currentData, previousData);
+            lastRows = rows;
+            renderPreview(rows);
+            document.getElementById('btn-csv').disabled = false;
+            const slug = (currentData.developer || 'employee') + '_sheet';
+            document.getElementById('btn-csv').dataset.filename = `ios-windrose-${slug}.csv`;
+        });
+
+        document.getElementById('btn-csv').addEventListener('click', () => {
+            if (!lastRows) return;
+            SheetsExport.downloadCsv(
+                document.getElementById('btn-csv').dataset.filename || 'ios-windrose-sheet.csv',
+                lastRows
+            );
+        });
+
+        function renderPreview(rows) {
+            document.getElementById('empty-hint').style.display = 'none';
+            document.getElementById('preview').style.display = 'block';
+            const table = document.getElementById('preview-table');
+            table.innerHTML = rows.map((row, i) => {
+                if (!row.length) return '<tr><td colspan="5" style="height:8px;border:none;background:#fff"></td></tr>';
+                const isHeader = row[0] === 'Компетенция';
+                const isSummary = row[0] === 'Резюме изменений с прошлой оценки';
+                if (isSummary) {
+                    return `<tr><th colspan="5">${row[0]}</th></tr><tr><td colspan="5" class="summary-cell">${escapeHtml(row[1] || '')}</td></tr>`;
+                }
+                if (row.length === 1) return '';
+                const tag = isHeader ? 'th' : 'td';
+                return '<tr>' + row.map(c => `<${tag}>${escapeHtml(c)}</${tag}>`).join('') + '</tr>';
+            }).join('');
+        }
+
+        function escapeHtml(t) {
+            const d = document.createElement('div');
+            d.textContent = t;
+            return d.innerHTML;
+        }
+    </script>
+</body>
+</html>

@@ -59,7 +59,8 @@ class DataManager {
                 data.competencies[comp.key].levels[level] = {
                     selfEvaluation: 0,
                     managerEvaluation: 0,
-                    comments: ''
+                    comments: '',
+                    managerComments: ''
                 };
             });
         });
@@ -168,7 +169,8 @@ class DataManager {
                         normalized.competencies[comp.key].levels[level] = {
                             selfEvaluation: Number(levelData.selfEvaluation) || 0,
                             managerEvaluation: Number(levelData.managerEvaluation) || 0,
-                            comments: String(levelData.comments || '')
+                            comments: String(levelData.comments || ''),
+                            managerComments: String(levelData.managerComments || '')
                         };
                         
                         console.log(`  ✅ ${level}: self=${levelData.selfEvaluation}, manager=${levelData.managerEvaluation}`);
@@ -177,7 +179,8 @@ class DataManager {
                         normalized.competencies[comp.key].levels[level] = {
                             selfEvaluation: 0,
                             managerEvaluation: 0,
-                            comments: ''
+                            comments: '',
+                            managerComments: ''
                         };
                         
                         console.log(`  ⚠️ ${level}: данные отсутствуют, создана пустая структура`);
@@ -196,7 +199,8 @@ class DataManager {
                     normalized.competencies[comp.key].levels[level] = {
                         selfEvaluation: 0,
                         managerEvaluation: 0,
-                        comments: ''
+                        comments: '',
+                        managerComments: ''
                     };
                 });
             }
@@ -233,6 +237,9 @@ class DataManager {
             case 'comments':
                 level.comments = String(value || '');
                 break;
+            case 'manager-comments':
+                level.managerComments = String(value || '');
+                break;
             default:
                 console.error('❌ Неизвестный тип оценки:', type);
                 return;
@@ -264,6 +271,8 @@ class DataManager {
                 return level.managerEvaluation || 0;
             case 'comments':
                 return level.comments || '';
+            case 'manager-comments':
+                return level.managerComments || '';
             default:
                 return this.getDefaultValue(type);
         }
@@ -278,6 +287,7 @@ class DataManager {
             case 'manager':
                 return 0;
             case 'comments':
+            case 'manager-comments':
                 return '';
             default:
                 return 0;
@@ -316,7 +326,8 @@ class DataManager {
                 saveData.competencies[compKey][levelKey] = {
                     selfEvaluation: level.selfEvaluation,
                     managerEvaluation: level.managerEvaluation,
-                    comments: level.comments
+                    comments: level.comments,
+                    managerComments: level.managerComments || ''
                 };
             });
         });

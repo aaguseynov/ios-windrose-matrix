@@ -230,7 +230,7 @@ class UIManager {
                         console.warn(`    ⚠️ Поле оценки менеджера не найдено: ${compKey}.${levelKey}.manager`);
                     }
                     
-                    // Комментарии
+                    // Комментарии разработчика
                     const commentsInput = this.findInput(compKey, levelKey, 'comments');
                     if (commentsInput) {
                         commentsInput.value = level.comments || '';
@@ -238,6 +238,13 @@ class UIManager {
                         loadedCount++;
                     } else {
                         console.warn(`    ⚠️ Поле комментариев не найдено: ${compKey}.${levelKey}.comments`);
+                    }
+                    
+                    // Комментарии оценивающего
+                    const managerCommentsInput = this.findInput(compKey, levelKey, 'manager-comments');
+                    if (managerCommentsInput) {
+                        managerCommentsInput.value = level.managerComments || '';
+                        loadedCount++;
                     }
                 });
             }
